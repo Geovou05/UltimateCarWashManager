@@ -1,4 +1,4 @@
-const C="ucwm-v3-all-calendars";
+const C="ucwm-v4-real-calendar";
 const F=["./","./index.html","./manifest.json","./icon.svg"];
 self.addEventListener("install",e=>{
   self.skipWaiting();

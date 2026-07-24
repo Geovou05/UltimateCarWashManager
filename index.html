@@ -27,6 +27,23 @@ input,select,textarea{width:100%;padding:12px;border:1px solid var(--line);borde
 dialog{border:0;border-radius:20px;width:calc(100% - 22px);max-width:620px;padding:0}.dlg{padding:16px}.dlghead{display:flex;justify-content:space-between;align-items:center}.link{background:none;color:#111;padding:5px;font-size:13px}
 .services{display:grid;grid-template-columns:1fr 1fr;gap:8px}.service{background:#f3f4f6;color:#111;border:1px solid var(--line);text-align:left}
 .notice{padding:11px;border-radius:12px;background:#eef2ff;font-size:13px;margin:8px 0}.calendar-event{border-left:4px solid #111;padding-left:10px}
+.calendar-toolbar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+.calendar-toolbar .month-title{font-size:18px;font-weight:800;text-align:center;flex:1}
+.calendar-toolbar button{padding:9px 11px}
+.calendar-weekdays,.calendar-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.calendar-weekdays div{text-align:center;font-size:11px;color:var(--muted);font-weight:700;padding:6px 0}
+.cal-day{min-height:54px;border:1px solid var(--line);border-radius:10px;background:#fff;color:#111;padding:6px 4px;text-align:left;position:relative;font-size:14px}
+.cal-day.outside{opacity:.32}
+.cal-day.today{border:2px solid #111}
+.cal-day.selected{background:#111;color:#fff}
+.cal-day .num{font-weight:800}
+.cal-day .dots{display:flex;gap:2px;position:absolute;left:5px;right:5px;bottom:5px;flex-wrap:wrap}
+.cal-day .dot{width:5px;height:5px;border-radius:50%;background:currentColor;opacity:.75}
+.day-header{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.day-header h3{margin:0}
+.calendar-event{border-left:4px solid #111;padding-left:10px}
+.event-time{font-weight:800;margin-right:5px}
+
 </style>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
@@ -54,9 +71,32 @@ dialog{border:0;border-radius:20px;width:calc(100% - 22px);max-width:620px;paddi
 <h3>Google Calendar</h3>
 <div id="googleStatus" class="notice">Δεν έχει συνδεθεί Google Calendar.</div>
 <button id="connectBtn" class="wide" onclick="connectGoogle()">Σύνδεση Google Calendar</button>
-<div class="row" style="margin-top:8px"><button class="secondary" onclick="loadCalendar()">Ανανέωση</button><button onclick="openAppointment()">+ Ραντεβού</button></div>
+<div class="row" style="margin-top:8px">
+  <button class="secondary" onclick="goToday()">Σήμερα</button>
+  <button class="secondary" onclick="loadCalendar()">Ανανέωση</button>
+  <button onclick="openAppointment()">+ Ραντεβού</button>
 </div>
-<div class="card"><h3>Επόμενα ραντεβού</h3><div id="calendarList" class="muted">Σύνδεσε το Google Calendar.</div></div>
+</div>
+
+<div class="card">
+  <div class="calendar-toolbar">
+    <button class="secondary" onclick="changeMonth(-1)">‹</button>
+    <div id="calendarMonthTitle" class="month-title"></div>
+    <button class="secondary" onclick="changeMonth(1)">›</button>
+  </div>
+  <div class="calendar-weekdays">
+    <div>ΔΕ</div><div>ΤΡ</div><div>ΤΕ</div><div>ΠΕ</div><div>ΠΑ</div><div>ΣΑ</div><div>ΚΥ</div>
+  </div>
+  <div id="calendarGrid" class="calendar-grid"></div>
+</div>
+
+<div class="card">
+  <div class="day-header">
+    <h3 id="selectedDayTitle">Ραντεβού ημέρας</h3>
+    <button class="secondary" onclick="openAppointment()">+ Ραντεβού</button>
+  </div>
+  <div id="calendarList" class="muted" style="margin-top:8px">Σύνδεσε το Google Calendar.</div>
+</div>
 </section>
 
 <section id="services" class="section">
@@ -111,6 +151,12 @@ const initSrv=[
 ].map(x=>({id:crypto.randomUUID(),name:x[0],price:x[1],favorite:x[2],history:[{date:new Date().toISOString(),price:x[1]}]}));
 let db=JSON.parse(localStorage.getItem(KEY)||"null")||{customers:[],services:initSrv,washes:[]};
 let googleToken=null, tokenClient=null; const $=id=>document.getElementById(id);
+let calendarCursor = new Date();
+calendarCursor = new Date(calendarCursor.getFullYear(), calendarCursor.getMonth(), 1);
+let selectedCalendarDate = new Date();
+selectedCalendarDate = new Date(selectedCalendarDate.getFullYear(), selectedCalendarDate.getMonth(), selectedCalendarDate.getDate());
+let calendarEvents = [];
+let calendarSources = [];
 function save(){localStorage.setItem(KEY,JSON.stringify(db));render()}
 function eur(n){return(Number(n)||0).toLocaleString("el-GR",{maximumFractionDigits:2})+"€"}
 function day(){return new Date().toISOString().slice(0,10)}
@@ -141,99 +187,172 @@ function saveGoogleSettings(){localStorage.setItem(GKEY,$("googleClientId").valu
 function initTokenClient(){const cid=localStorage.getItem(GKEY);if(!cid){alert("Πρώτα βάλε το Google OAuth Client ID στις Ρυθμίσεις.");return false}if(!window.google?.accounts?.oauth2){alert("Η υπηρεσία Google δεν έχει φορτώσει ακόμη.");return false}tokenClient=google.accounts.oauth2.initTokenClient({client_id:cid,scope:"https://www.googleapis.com/auth/calendar",callback:r=>{if(r.error){alert("Αποτυχία σύνδεσης: "+r.error);return}googleToken=r.access_token;$("googleStatus").textContent="✅ Google Calendar συνδεδεμένο";$("connectBtn").textContent="Επανασύνδεση Google";loadCalendar()}});return true}
 function connectGoogle(){if(!tokenClient&&!initTokenClient())return;tokenClient.requestAccessToken({prompt:googleToken?"":"consent"})}
 async function gfetch(url,opt={}){if(!googleToken){alert("Σύνδεσε πρώτα το Google Calendar.");throw new Error("no token")}opt.headers={...(opt.headers||{}),Authorization:"Bearer "+googleToken,"Content-Type":"application/json"};let r=await fetch(url,opt);if(r.status===401){googleToken=null;$("googleStatus").textContent="Η σύνδεση έληξε — σύνδεσε ξανά.";throw new Error("expired")}if(!r.ok)throw new Error(await r.text());return r.json()}
+function localDateKey(d){
+  const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,"0"), day=String(d.getDate()).padStart(2,"0");
+  return `${y}-${m}-${day}`;
+}
+function eventDateKey(e){
+  if(e.start?.date) return e.start.date;
+  const d=new Date(e.start?.dateTime);
+  return isNaN(d)? "" : localDateKey(d);
+}
+function escapeHtml(v){
+  return String(v??"").replace(/[&<>"']/g,s=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[s]));
+}
+function monthRange(){
+  const start = new Date(calendarCursor.getFullYear(), calendarCursor.getMonth(), 1, 0,0,0,0);
+  const end = new Date(calendarCursor.getFullYear(), calendarCursor.getMonth()+1, 1, 0,0,0,0);
+  return {start,end};
+}
+function renderCalendar(){
+  const monthNames=["Ιανουάριος","Φεβρουάριος","Μάρτιος","Απρίλιος","Μάιος","Ιούνιος","Ιούλιος","Αύγουστος","Σεπτέμβριος","Οκτώβριος","Νοέμβριος","Δεκέμβριος"];
+  $("calendarMonthTitle").textContent=`${monthNames[calendarCursor.getMonth()]} ${calendarCursor.getFullYear()}`;
+
+  const first = new Date(calendarCursor.getFullYear(), calendarCursor.getMonth(), 1);
+  const mondayIndex = (first.getDay()+6)%7;
+  const gridStart = new Date(first);
+  gridStart.setDate(first.getDate()-mondayIndex);
+
+  const todayKey = localDateKey(new Date());
+  const selectedKey = localDateKey(selectedCalendarDate);
+  let html="";
+
+  for(let i=0;i<42;i++){
+    const d=new Date(gridStart);
+    d.setDate(gridStart.getDate()+i);
+    const key=localDateKey(d);
+    const inMonth=d.getMonth()===calendarCursor.getMonth();
+    const dayEvents=calendarEvents.filter(e=>eventDateKey(e)===key);
+    const classes=[
+      "cal-day",
+      inMonth?"":"outside",
+      key===todayKey?"today":"",
+      key===selectedKey?"selected":""
+    ].filter(Boolean).join(" ");
+
+    const dots = dayEvents.slice(0,5).map(()=>'<span class="dot"></span>').join("");
+    html += `<button class="${classes}" onclick="selectCalendarDate('${key}')">
+      <span class="num">${d.getDate()}</span>
+      ${dayEvents.length?`<div class="dots">${dots}</div>`:""}
+    </button>`;
+  }
+  $("calendarGrid").innerHTML=html;
+  renderSelectedDay();
+}
+function renderSelectedDay(){
+  const key=localDateKey(selectedCalendarDate);
+  $("selectedDayTitle").textContent=selectedCalendarDate.toLocaleDateString("el-GR",{weekday:"long",day:"numeric",month:"long"});
+  const events=calendarEvents
+    .filter(e=>eventDateKey(e)===key)
+    .sort((a,b)=>new Date(a.start?.dateTime||a.start?.date||0)-new Date(b.start?.dateTime||b.start?.date||0));
+
+  $("calendarList").innerHTML=events.length?events.map(e=>{
+    let time="Όλη μέρα";
+    if(e.start?.dateTime){
+      time=new Date(e.start.dateTime).toLocaleTimeString("el-GR",{hour:"2-digit",minute:"2-digit"});
+    }
+    return `<div class="list-item calendar-event">
+      <span class="event-time">${escapeHtml(time)}</span><b>${escapeHtml(e.summary||"Χωρίς τίτλο")}</b><br>
+      <span class="pill">${escapeHtml(e._calendarName||"Ημερολόγιο")}</span>
+      ${e.location?`<br><span class="muted">${escapeHtml(e.location)}</span>`:""}
+    </div>`;
+  }).join(""):"Δεν υπάρχουν ραντεβού αυτή την ημέρα.";
+}
+function selectCalendarDate(key){
+  const [y,m,d]=key.split("-").map(Number);
+  selectedCalendarDate=new Date(y,m-1,d);
+  if(selectedCalendarDate.getMonth()!==calendarCursor.getMonth() || selectedCalendarDate.getFullYear()!==calendarCursor.getFullYear()){
+    calendarCursor=new Date(y,m-1,1);
+    loadCalendar();
+  }else{
+    renderCalendar();
+  }
+}
+function changeMonth(delta){
+  calendarCursor=new Date(calendarCursor.getFullYear(),calendarCursor.getMonth()+delta,1);
+  selectedCalendarDate=new Date(calendarCursor.getFullYear(),calendarCursor.getMonth(),1);
+  if(googleToken) loadCalendar(); else renderCalendar();
+}
+function goToday(){
+  const now=new Date();
+  calendarCursor=new Date(now.getFullYear(),now.getMonth(),1);
+  selectedCalendarDate=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+  if(googleToken) loadCalendar(); else renderCalendar();
+}
 async function loadCalendar(){
+  renderCalendar();
   if(!googleToken){
     $("calendarList").textContent="Σύνδεσε το Google Calendar.";
     return;
   }
 
   $("calendarList").textContent="Φόρτωση ραντεβού...";
-
-  // Δείχνουμε από σήμερα και για 12 μήνες μπροστά.
-  const now = new Date();
-  const timeMin = now.toISOString();
-  const timeMax = new Date(now.getTime() + 365*24*60*60*1000).toISOString();
+  const {start,end}=monthRange();
 
   try{
-    // Παίρνουμε ΟΛΑ τα ημερολόγια του λογαριασμού (π.χ. Primary, "Οι Εργασίες Μου" κ.λπ.).
-    let calendars = [];
-    let pageToken = "";
-
+    let calendars=[], pageToken="";
     do{
-      const url = "https://www.googleapis.com/calendar/v3/users/me/calendarList"
-        + "?maxResults=250"
-        + (pageToken ? "&pageToken="+encodeURIComponent(pageToken) : "");
-      const page = await gfetch(url);
-      calendars.push(...(page.items || []));
-      pageToken = page.nextPageToken || "";
+      const url="https://www.googleapis.com/calendar/v3/users/me/calendarList?maxResults=250"
+        +(pageToken?"&pageToken="+encodeURIComponent(pageToken):"");
+      const page=await gfetch(url);
+      calendars.push(...(page.items||[]));
+      pageToken=page.nextPageToken||"";
     }while(pageToken);
 
-    // Διαβάζουμε τα events από κάθε ορατό/επιλεγμένο ημερολόγιο.
-    let allEvents = [];
+    calendarSources=calendars.filter(c=>!c.deleted);
+    let allEvents=[];
 
-    for(const cal of calendars){
-      // Αγνοούμε μόνο ημερολόγια που ο χρήστης έχει κρύψει πλήρως.
-      if(cal.deleted) continue;
-
-      let eventPageToken = "";
+    for(const cal of calendarSources){
+      let eventPageToken="";
       do{
-        const url = "https://www.googleapis.com/calendar/v3/calendars/"
-          + encodeURIComponent(cal.id)
-          + "/events?singleEvents=true&orderBy=startTime"
-          + "&timeMin="+encodeURIComponent(timeMin)
-          + "&timeMax="+encodeURIComponent(timeMax)
-          + "&maxResults=2500"
-          + (eventPageToken ? "&pageToken="+encodeURIComponent(eventPageToken) : "");
+        const url="https://www.googleapis.com/calendar/v3/calendars/"
+          +encodeURIComponent(cal.id)
+          +"/events?singleEvents=true&orderBy=startTime"
+          +"&timeMin="+encodeURIComponent(start.toISOString())
+          +"&timeMax="+encodeURIComponent(end.toISOString())
+          +"&maxResults=2500"
+          +(eventPageToken?"&pageToken="+encodeURIComponent(eventPageToken):"");
 
-        const page = await gfetch(url);
-
-        for(const e of (page.items || [])){
-          if(e.status === "cancelled") continue;
+        const page=await gfetch(url);
+        for(const e of (page.items||[])){
+          if(e.status==="cancelled") continue;
           allEvents.push({
             ...e,
-            _calendarName: cal.summaryOverride || cal.summary || "Ημερολόγιο",
-            _calendarId: cal.id
+            _calendarName:cal.summaryOverride||cal.summary||"Ημερολόγιο",
+            _calendarId:cal.id
           });
         }
-        eventPageToken = page.nextPageToken || "";
+        eventPageToken=page.nextPageToken||"";
       }while(eventPageToken);
     }
 
-    allEvents.sort((a,b)=>{
-      const ad = new Date(a.start?.dateTime || a.start?.date || 0);
-      const bd = new Date(b.start?.dateTime || b.start?.date || 0);
-      return ad - bd;
-    });
-
-    $("calendarList").innerHTML = allEvents.length
-      ? allEvents.map(e=>{
-          const startRaw = e.start?.dateTime || e.start?.date;
-          const start = startRaw ? new Date(startRaw) : null;
-          const when = start
-            ? start.toLocaleString("el-GR",{
-                day:"numeric",month:"numeric",year:"numeric",
-                hour:e.start?.dateTime ? "2-digit" : undefined,
-                minute:e.start?.dateTime ? "2-digit" : undefined
-              })
-            : "";
-
-          return `<div class="list-item calendar-event">
-            <b>${e.summary || "Χωρίς τίτλο"}</b><br>
-            <span class="muted">${when}</span><br>
-            <span class="pill">${e._calendarName}</span>
-          </div>`;
-        }).join("")
-      : "Δεν υπάρχουν επόμενα ραντεβού στα ημερολόγιά σου.";
-
+    calendarEvents=allEvents;
+    renderCalendar();
   }catch(e){
     console.error(e);
-    $("calendarList").textContent="Δεν ήταν δυνατή η φόρτωση όλων των ημερολογίων. Πάτησε ξανά Σύνδεση Google Calendar.";
+    $("calendarList").textContent="Δεν ήταν δυνατή η φόρτωση του ημερολογίου. Πάτησε ξανά Σύνδεση Google Calendar.";
   }
 }
-function openAppointment(){if(!googleToken){alert("Σύνδεσε πρώτα το Google Calendar.");return}let d=new Date(Date.now()+3600000),e=new Date(d.getTime()+3600000);$("apptStart").value=d.toISOString().slice(0,16);$("apptEnd").value=e.toISOString().slice(0,16);apptDlg.showModal()}
-async function createCalendarEvent(){let st=$("apptStart").value,en=$("apptEnd").value;if(!st||!en){alert("Βάλε ώρα έναρξης και λήξης.");return}let body={summary:$("apptTitle").value||"Ραντεβού Ultimate Car Wash",description:$("apptNotes").value||"",start:{dateTime:new Date(st).toISOString(),timeZone:"Europe/Athens"},end:{dateTime:new Date(en).toISOString(),timeZone:"Europe/Athens"}};try{await gfetch("https://www.googleapis.com/calendar/v3/calendars/primary/events",{method:"POST",body:JSON.stringify(body)});apptDlg.close();alert("✅ Το ραντεβού μπήκε στο Google Calendar.");loadCalendar()}catch(e){alert("Δεν αποθηκεύτηκε το ραντεβού.")}}
+function toLocalInputValue(d){
+  const pad=n=>String(n).padStart(2,"0");
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+function openAppointment(){
+  if(!googleToken){alert("Σύνδεσε πρώτα το Google Calendar.");return}
+  const now=new Date();
+  let start=new Date(selectedCalendarDate.getFullYear(),selectedCalendarDate.getMonth(),selectedCalendarDate.getDate(),now.getHours()+1,0,0,0);
+  if(localDateKey(selectedCalendarDate)===localDateKey(now) && start<now){
+    start=new Date(now.getTime()+60*60*1000);
+    start.setMinutes(0,0,0);
+  }
+  const end=new Date(start.getTime()+60*60*1000);
+  $("apptStart").value=toLocalInputValue(start);
+  $("apptEnd").value=toLocalInputValue(end);
+  apptDlg.showModal();
+}
+async function createCalendarEvent(){let st=$("apptStart").value,en=$("apptEnd").value;if(!st||!en){alert("Βάλε ώρα έναρξης και λήξης.");return}let body={summary:$("apptTitle").value||"Ραντεβού Ultimate Car Wash",description:$("apptNotes").value||"",start:{dateTime:new Date(st).toISOString(),timeZone:"Europe/Athens"},end:{dateTime:new Date(en).toISOString(),timeZone:"Europe/Athens"}};try{await gfetch("https://www.googleapis.com/calendar/v3/calendars/primary/events",{method:"POST",body:JSON.stringify(body)});apptDlg.close();alert("✅ Το ραντεβού μπήκε στο Google Calendar.");calendarCursor=new Date(new Date(st).getFullYear(),new Date(st).getMonth(),1);selectedCalendarDate=new Date(new Date(st).getFullYear(),new Date(st).getMonth(),new Date(st).getDate());loadCalendar()}catch(e){alert("Δεν αποθηκεύτηκε το ραντεβού.")}}
 if("serviceWorker"in navigator)navigator.serviceWorker.register("service-worker.js").catch(()=>{});
-render();
+render();renderCalendar();
 </script>
 </body>
 </html>
