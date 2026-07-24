@@ -200,8 +200,10 @@ function escapeHtml(v){
   return String(v??"").replace(/[&<>"']/g,s=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[s]));
 }
 function monthRange(){
-  const start = new Date(calendarCursor.getFullYear(), calendarCursor.getMonth(), 1, 0,0,0,0);
-  const end = new Date(calendarCursor.getFullYear(), calendarCursor.getMonth()+1, 1, 0,0,0,0);
+  // Φέρνουμε μεγαλύτερο εύρος για να μην χάνονται events λόγω timezone,
+  // recurring instances ή ορίων μήνα.
+  const start = new Date(calendarCursor.getFullYear(), calendarCursor.getMonth()-1, 1, 0,0,0,0);
+  const end = new Date(calendarCursor.getFullYear(), calendarCursor.getMonth()+2, 1, 0,0,0,0);
   return {start,end};
 }
 function renderCalendar(){
@@ -246,6 +248,8 @@ function renderSelectedDay(){
     .filter(e=>eventDateKey(e)===key)
     .sort((a,b)=>new Date(a.start?.dateTime||a.start?.date||0)-new Date(b.start?.dateTime||b.start?.date||0));
 
+  const sourceNames=[...new Set(calendarSources.map(c=>c.summaryOverride||c.summary||"Ημερολόγιο"))];
+  $("googleStatus").title="Ημερολόγια: "+sourceNames.join(" | ");
   $("calendarList").innerHTML=events.length?events.map(e=>{
     let time="Όλη μέρα";
     if(e.start?.dateTime){
@@ -292,7 +296,7 @@ async function loadCalendar(){
   try{
     let calendars=[], pageToken="";
     do{
-      const url="https://www.googleapis.com/calendar/v3/users/me/calendarList?maxResults=250"
+      const url="https://www.googleapis.com/calendar/v3/users/me/calendarList?maxResults=250&showHidden=true"
         +(pageToken?"&pageToken="+encodeURIComponent(pageToken):"");
       const page=await gfetch(url);
       calendars.push(...(page.items||[]));
@@ -300,6 +304,7 @@ async function loadCalendar(){
     }while(pageToken);
 
     calendarSources=calendars.filter(c=>!c.deleted);
+    $("googleStatus").textContent=`✅ Google Calendar συνδεδεμένο — βρέθηκαν ${calendarSources.length} ημερολόγια`;
     let allEvents=[];
 
     for(const cal of calendarSources){
