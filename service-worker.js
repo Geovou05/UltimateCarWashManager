@@ -1,1 +1,19 @@
-const C="ucwm-v2";const F=["./","./index.html","./manifest.json","./icon.svg"];self.addEventListener("install",e=>e.waitUntil(caches.open(C).then(c=>c.addAll(F))));self.addEventListener("fetch",e=>e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request))));
+const C="ucwm-v3-all-calendars";
+const F=["./","./index.html","./manifest.json","./icon.svg"];
+self.addEventListener("install",e=>{
+  self.skipWaiting();
+  e.waitUntil(caches.open(C).then(c=>c.addAll(F)));
+});
+self.addEventListener("activate",e=>{
+  e.waitUntil(
+    caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==C).map(k=>caches.delete(k))))
+      .then(()=>self.clients.claim())
+  );
+});
+self.addEventListener("fetch",e=>{
+  e.respondWith(fetch(e.request).then(r=>{
+    const clone=r.clone();
+    caches.open(C).then(c=>c.put(e.request,clone));
+    return r;
+  }).catch(()=>caches.match(e.request)));
+});

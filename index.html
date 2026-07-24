@@ -141,7 +141,95 @@ function saveGoogleSettings(){localStorage.setItem(GKEY,$("googleClientId").valu
 function initTokenClient(){const cid=localStorage.getItem(GKEY);if(!cid){alert("Πρώτα βάλε το Google OAuth Client ID στις Ρυθμίσεις.");return false}if(!window.google?.accounts?.oauth2){alert("Η υπηρεσία Google δεν έχει φορτώσει ακόμη.");return false}tokenClient=google.accounts.oauth2.initTokenClient({client_id:cid,scope:"https://www.googleapis.com/auth/calendar",callback:r=>{if(r.error){alert("Αποτυχία σύνδεσης: "+r.error);return}googleToken=r.access_token;$("googleStatus").textContent="✅ Google Calendar συνδεδεμένο";$("connectBtn").textContent="Επανασύνδεση Google";loadCalendar()}});return true}
 function connectGoogle(){if(!tokenClient&&!initTokenClient())return;tokenClient.requestAccessToken({prompt:googleToken?"":"consent"})}
 async function gfetch(url,opt={}){if(!googleToken){alert("Σύνδεσε πρώτα το Google Calendar.");throw new Error("no token")}opt.headers={...(opt.headers||{}),Authorization:"Bearer "+googleToken,"Content-Type":"application/json"};let r=await fetch(url,opt);if(r.status===401){googleToken=null;$("googleStatus").textContent="Η σύνδεση έληξε — σύνδεσε ξανά.";throw new Error("expired")}if(!r.ok)throw new Error(await r.text());return r.json()}
-async function loadCalendar(){if(!googleToken){$("calendarList").textContent="Σύνδεσε το Google Calendar.";return}let now=new Date().toISOString(),max=new Date(Date.now()+30*86400000).toISOString();try{let d=await gfetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events?singleEvents=true&orderBy=startTime&timeMin=${encodeURIComponent(now)}&timeMax=${encodeURIComponent(max)}&maxResults=30`);$("calendarList").innerHTML=d.items?.length?d.items.map(e=>`<div class="list-item calendar-event"><b>${e.summary||"Χωρίς τίτλο"}</b><br><span class="muted">${new Date(e.start.dateTime||e.start.date).toLocaleString("el-GR")}</span></div>`).join(""):"Δεν υπάρχουν επόμενα ραντεβού."}catch(e){$("calendarList").textContent="Δεν ήταν δυνατή η φόρτωση."}}
+async function loadCalendar(){
+  if(!googleToken){
+    $("calendarList").textContent="Σύνδεσε το Google Calendar.";
+    return;
+  }
+
+  $("calendarList").textContent="Φόρτωση ραντεβού...";
+
+  // Δείχνουμε από σήμερα και για 12 μήνες μπροστά.
+  const now = new Date();
+  const timeMin = now.toISOString();
+  const timeMax = new Date(now.getTime() + 365*24*60*60*1000).toISOString();
+
+  try{
+    // Παίρνουμε ΟΛΑ τα ημερολόγια του λογαριασμού (π.χ. Primary, "Οι Εργασίες Μου" κ.λπ.).
+    let calendars = [];
+    let pageToken = "";
+
+    do{
+      const url = "https://www.googleapis.com/calendar/v3/users/me/calendarList"
+        + "?maxResults=250"
+        + (pageToken ? "&pageToken="+encodeURIComponent(pageToken) : "");
+      const page = await gfetch(url);
+      calendars.push(...(page.items || []));
+      pageToken = page.nextPageToken || "";
+    }while(pageToken);
+
+    // Διαβάζουμε τα events από κάθε ορατό/επιλεγμένο ημερολόγιο.
+    let allEvents = [];
+
+    for(const cal of calendars){
+      // Αγνοούμε μόνο ημερολόγια που ο χρήστης έχει κρύψει πλήρως.
+      if(cal.deleted) continue;
+
+      let eventPageToken = "";
+      do{
+        const url = "https://www.googleapis.com/calendar/v3/calendars/"
+          + encodeURIComponent(cal.id)
+          + "/events?singleEvents=true&orderBy=startTime"
+          + "&timeMin="+encodeURIComponent(timeMin)
+          + "&timeMax="+encodeURIComponent(timeMax)
+          + "&maxResults=2500"
+          + (eventPageToken ? "&pageToken="+encodeURIComponent(eventPageToken) : "");
+
+        const page = await gfetch(url);
+
+        for(const e of (page.items || [])){
+          if(e.status === "cancelled") continue;
+          allEvents.push({
+            ...e,
+            _calendarName: cal.summaryOverride || cal.summary || "Ημερολόγιο",
+            _calendarId: cal.id
+          });
+        }
+        eventPageToken = page.nextPageToken || "";
+      }while(eventPageToken);
+    }
+
+    allEvents.sort((a,b)=>{
+      const ad = new Date(a.start?.dateTime || a.start?.date || 0);
+      const bd = new Date(b.start?.dateTime || b.start?.date || 0);
+      return ad - bd;
+    });
+
+    $("calendarList").innerHTML = allEvents.length
+      ? allEvents.map(e=>{
+          const startRaw = e.start?.dateTime || e.start?.date;
+          const start = startRaw ? new Date(startRaw) : null;
+          const when = start
+            ? start.toLocaleString("el-GR",{
+                day:"numeric",month:"numeric",year:"numeric",
+                hour:e.start?.dateTime ? "2-digit" : undefined,
+                minute:e.start?.dateTime ? "2-digit" : undefined
+              })
+            : "";
+
+          return `<div class="list-item calendar-event">
+            <b>${e.summary || "Χωρίς τίτλο"}</b><br>
+            <span class="muted">${when}</span><br>
+            <span class="pill">${e._calendarName}</span>
+          </div>`;
+        }).join("")
+      : "Δεν υπάρχουν επόμενα ραντεβού στα ημερολόγιά σου.";
+
+  }catch(e){
+    console.error(e);
+    $("calendarList").textContent="Δεν ήταν δυνατή η φόρτωση όλων των ημερολογίων. Πάτησε ξανά Σύνδεση Google Calendar.";
+  }
+}
 function openAppointment(){if(!googleToken){alert("Σύνδεσε πρώτα το Google Calendar.");return}let d=new Date(Date.now()+3600000),e=new Date(d.getTime()+3600000);$("apptStart").value=d.toISOString().slice(0,16);$("apptEnd").value=e.toISOString().slice(0,16);apptDlg.showModal()}
 async function createCalendarEvent(){let st=$("apptStart").value,en=$("apptEnd").value;if(!st||!en){alert("Βάλε ώρα έναρξης και λήξης.");return}let body={summary:$("apptTitle").value||"Ραντεβού Ultimate Car Wash",description:$("apptNotes").value||"",start:{dateTime:new Date(st).toISOString(),timeZone:"Europe/Athens"},end:{dateTime:new Date(en).toISOString(),timeZone:"Europe/Athens"}};try{await gfetch("https://www.googleapis.com/calendar/v3/calendars/primary/events",{method:"POST",body:JSON.stringify(body)});apptDlg.close();alert("✅ Το ραντεβού μπήκε στο Google Calendar.");loadCalendar()}catch(e){alert("Δεν αποθηκεύτηκε το ραντεβού.")}}
 if("serviceWorker"in navigator)navigator.serviceWorker.register("service-worker.js").catch(()=>{});
