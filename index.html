@@ -3,16 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#06111f">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Ultimate Car Wash">
+<meta name="theme-color" content="#0b0b0d">
 <link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="apple-touch-icon.png">
-<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
-<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+<link rel="apple-touch-icon" href="icon.svg">
 <title>Ultimate Car Wash Manager</title>
-<!-- Ultimate Car Wash Manager v13 - complete branded PWA -->
+<!-- Ultimate Car Wash Manager v14 - secure local login -->
 <style>
 :root{--bg:#f4f5f7;--card:#fff;--ink:#111318;--muted:#6b7280;--line:#e5e7eb;--dark:#0b0b0d;--green:#16a34a;--red:#dc2626;--amber:#d97706}
 *{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--ink)}
@@ -76,28 +71,40 @@ dialog{border:0;border-radius:20px;width:calc(100% - 22px);max-width:620px;paddi
 
 
 .status-dot{display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:24px;border-radius:999px;font-size:14px;margin-right:5px}.status-vip{background:#fef3c7}.status-active{background:#dcfce7}.status-warning{background:#fef3c7}.status-inactive{background:#fee2e2}.mini-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.metric{padding:11px;border:1px solid var(--line);border-radius:13px;background:#fafafa}.metric b{display:block;font-size:18px;margin-top:3px}.subtabs{display:flex;gap:7px;overflow-x:auto;padding-bottom:8px}.subtabs button{white-space:nowrap;padding:10px 12px}.subtabs button.on{background:#111;color:#fff}.subpage{display:none}.subpage.on{display:block}.history-row{padding:10px 0;border-bottom:1px solid var(--line)}.history-row:last-child{border:0}.amount-positive{color:#166534;font-weight:800}.amount-negative{color:#991b1b;font-weight:800}.warning-card{background:#fff7ed;border:1px solid #fed7aa}.danger-card{background:#fef2f2;border:1px solid #fecaca}.success-card{background:#f0fdf4;border:1px solid #bbf7d0}.split-label{display:grid;grid-template-columns:1fr 1fr;gap:8px}.small-note{font-size:11px;color:var(--muted);margin-top:-6px;margin-bottom:8px}.customer-finance{display:grid;grid-template-columns:repeat(2,1fr);gap:7px;margin-top:10px}.customer-finance div{background:#f8fafc;border:1px solid var(--line);border-radius:11px;padding:9px}.customer-finance b{display:block;font-size:16px}.reminder-due{border-left:4px solid var(--red);padding-left:9px}.reminder-upcoming{border-left:4px solid var(--amber);padding-left:9px}.offer-wash-option{padding:10px;border-radius:12px;background:#fffbeb;border:1px solid #fde68a;margin-bottom:10px}.table-scroll{overflow:auto}.simple-table{width:100%;border-collapse:collapse;font-size:13px}.simple-table th,.simple-table td{padding:8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}.kpi-title{font-size:11px;color:var(--muted)}
+
+/* ===== Login / security v14 ===== */
+body.auth-locked{overflow:hidden}
+body.auth-locked>header,body.auth-locked>main,body.auth-locked>nav{visibility:hidden}
+.auth-screen{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;padding:22px;background:radial-gradient(circle at top,#123a76 0,#07162d 38%,#02050b 100%);color:#fff}
+.auth-screen.hidden{display:none}
+.auth-panel{width:min(100%,420px);background:rgba(5,14,29,.94);border:1px solid rgba(72,149,255,.35);border-radius:26px;padding:24px;box-shadow:0 25px 70px #000b;backdrop-filter:blur(18px)}
+.auth-brand{display:flex;align-items:center;gap:13px;margin-bottom:22px}.auth-brand img{width:62px;height:62px;border-radius:17px;background:#fff;object-fit:contain}.auth-brand h2{margin:0;font-size:23px}.auth-brand p{margin:4px 0 0;color:#9fc4ff;font-size:13px}
+.auth-panel label{display:block;font-size:13px;font-weight:800;color:#dbeafe;margin-top:8px}.auth-panel input{background:#fff;color:#09111f;border:2px solid transparent}.auth-panel input:focus{outline:none;border-color:#3284ff;box-shadow:0 0 0 4px #3284ff26}
+.auth-pin-wrap{position:relative}.auth-pin-wrap input{padding-right:55px;letter-spacing:8px;font-size:22px;font-weight:900}.auth-eye{position:absolute;right:7px;top:9px;background:#eaf2ff;color:#0b2854;padding:8px 10px;border-radius:9px;font-size:15px}
+.auth-check{display:flex!important;align-items:center;gap:9px;margin:10px 0 15px!important;color:#e8f2ff!important}.auth-check input{width:auto;margin:0}.auth-message{min-height:22px;margin:8px 0;font-size:13px;color:#fecaca}.auth-message.okmsg{color:#bbf7d0}.auth-note{font-size:11px;color:#9fb0c8;line-height:1.45;margin-top:13px}.auth-primary{background:linear-gradient(135deg,#0d6efd,#36a4ff);width:100%;box-shadow:0 10px 25px #0767e84d}.auth-primary:disabled{opacity:.45;cursor:not-allowed}.auth-countdown{font-weight:900;color:#ffd27a}
+.header-lock{margin-left:auto;background:#163b70;color:#fff;padding:9px 11px;border:1px solid #3875bd;font-size:13px}
+.security-box{border:1px solid #bfdbfe;background:#eff6ff;border-radius:14px;padding:12px;margin-top:10px}
+
 </style>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
-<style>
-:root{--bg:#050b13;--card:#0d1b2b;--ink:#f7fbff;--muted:#9eb0c3;--line:#1b3856;--dark:#050b13;--green:#25c77a;--red:#ff5964;--amber:#ffb84a;--blue:#168cff;--cyan:#56c8ff}
-html{background:#050b13}body{background:radial-gradient(circle at 80% -10%,#168cff44,transparent 30%),linear-gradient(180deg,#071525,#050b13);color:var(--ink);min-height:100vh}
-header{background:#050b13e8;backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border-bottom:1px solid #56c8ff28;padding-top:calc(10px + env(safe-area-inset-top))}.logo{width:46px;height:46px;border-radius:14px;overflow:hidden;background:#071525;box-shadow:0 0 0 1px #ffffff20,0 8px 22px #168cff44}.logo img{width:100%;height:100%;display:block}.sub{color:var(--cyan);opacity:1;font-weight:800;letter-spacing:1.2px}.version{margin-left:auto;font-size:10px;font-weight:900;color:#d5edff;background:#168cff25;border:1px solid #56c8ff40;padding:5px 8px;border-radius:999px}
-main{max-width:820px}.card{background:linear-gradient(145deg,#10243af2,#0a1929f5);border:1px solid #56c8ff20;box-shadow:0 16px 40px #00000048;color:#fff}.label,.muted,.kpi-title{color:var(--muted)}
-button,.btn{background:linear-gradient(135deg,#168cff,#0e6edb);box-shadow:0 8px 20px #168cff2e}button.secondary,.btn.secondary{background:#16283b;color:#eaf6ff;border:1px solid var(--line);box-shadow:none}.link{background:none;color:var(--cyan);box-shadow:none}
-input,select,textarea{background:#071321;color:#fff;border-color:var(--line)}input:focus,select:focus,textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px #168cff24}input::placeholder,textarea::placeholder{color:#71869b}select option{background:#071321;color:#fff}
-.tabs{background:#050b13f2;border-top:1px solid #56c8ff30;backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}.tabs button{background:none;color:#7f95aa;box-shadow:none}.tabs .active{color:#fff}
-dialog{background:#091725;color:#fff;border:1px solid var(--line);box-shadow:0 30px 80px #00000090}dialog::backdrop{background:#00050cc4;backdrop-filter:blur(5px)}
-.service,.cal-day,.customer-result,.metric,.customer-finance div{background:#091725;color:#fff;border-color:var(--line);box-shadow:none}.cal-day.selected{background:linear-gradient(135deg,#168cff,#0e6edb)}.cal-day.today{border-color:var(--cyan)}
-.notice{background:#168cff1c;border:1px solid #56c8ff30}.subtabs button{background:#10243a;border:1px solid var(--line);box-shadow:none}.subtabs button.on{background:linear-gradient(135deg,#168cff,#0e6edb)}
-.customer-results{background:#091725;border-color:var(--line)}.selected-customer{background:#0c3025;border-color:#17563f}.offer-box,.offer-wash-option{background:#30240f;border-color:#6d501d}.offer-box.ready{background:#0e3325;border-color:#1c6c4c}.offer-progress{background:#071321}.offer-progress span{background:linear-gradient(90deg,#168cff,#56c8ff)}
-.pill{background:#17304a;color:#d9efff}.pill.red{background:#3b1820;color:#ffadb4}.pill.green{background:#103c2c;color:#80efb9}.pill.amber{background:#443216;color:#ffd38b}.amount-positive{color:#78ebb1}.amount-negative{color:#ff98a1}.warning-card{background:#30240f;border-color:#6d501d}.danger-card{background:#32151c;border-color:#6b2731}.success-card{background:#0e3325;border-color:#1c6c4c}
-.brand-strip{height:3px;background:linear-gradient(90deg,transparent,#168cff,#56c8ff,transparent)}
-@media(min-width:700px){.grid{grid-template-columns:repeat(4,1fr)}.mini-grid{grid-template-columns:repeat(4,1fr)}}
-</style>
 </head>
-<body>
-<div class="brand-strip"></div>
-<header><div class="logo"><img src="icon.svg" alt="Ultimate Car Wash"></div><div><h1>Ultimate Car Wash</h1><div class="sub">Manager</div></div><div class="version">v13</div></header>
+<body class="auth-locked">
+
+<div id="authScreen" class="auth-screen">
+  <div class="auth-panel">
+    <div class="auth-brand"><img src="icon-192.png" alt="Ultimate Car Wash"><div><h2 id="authTitle">Ασφαλής είσοδος</h2><p>Ultimate Car Wash Manager</p></div></div>
+    <div id="setupHelp" class="notice" style="display:none;background:#0d2c58;color:#e7f1ff;border:1px solid #245b9d">Πρώτη είσοδος: όρισε το username και το προσωπικό σου εξαψήφιο PIN.</div>
+    <label>Username</label><input id="authUsername" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="Username">
+    <label>Εξαψήφιο PIN</label><div class="auth-pin-wrap"><input id="authPin" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="current-password" placeholder="••••••"><button type="button" class="auth-eye" onclick="togglePin('authPin',this)">👁</button></div>
+    <div id="confirmPinWrap" style="display:none"><label>Επιβεβαίωση PIN</label><div class="auth-pin-wrap"><input id="authPinConfirm" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="new-password" placeholder="••••••"><button type="button" class="auth-eye" onclick="togglePin('authPinConfirm',this)">👁</button></div></div>
+    <label id="rememberRow" class="auth-check"><input id="authRemember" type="checkbox"> Να με θυμάται σε αυτή τη συσκευή</label>
+    <div id="authMessage" class="auth-message"></div>
+    <button id="authSubmit" class="auth-primary" onclick="submitAuth()">Σύνδεση</button>
+    <div class="auth-note">Μετά από 5 λανθασμένες προσπάθειες η είσοδος κλειδώνει για 5 λεπτά. Η απομνημόνευση ισχύει μόνο στη συγκεκριμένη συσκευή και στον συγκεκριμένο browser.</div>
+  </div>
+</div>
+
+<header><div class="logo">U</div><div><h1>Ultimate Car Wash</h1><div class="sub">Manager</div></div><button class="header-lock" onclick="lockApp(false)" title="Κλείδωμα εφαρμογής">🔒 Κλείδωμα</button></header>
 <main>
 <section id="home" class="section active">
 <div class="grid">
@@ -191,6 +198,7 @@ dialog{background:#091725;color:#fff;border:1px solid var(--line);box-shadow:0 3
 <div class="card"><h3>Ημερήσια Ζ</h3><div id="zReportsList"></div></div>
 </div>
 <div id="more-settings" class="subpage">
+<div class="card"><h3>🔐 Ασφάλεια σύνδεσης</h3><div class="security-box">Η εφαρμογή προστατεύεται με username και εξαψήφιο PIN. Επιτρέπονται έως 5 λανθασμένες προσπάθειες και μετά εφαρμόζεται αναμονή 5 λεπτών.</div><button class="wide secondary" style="margin-top:10px" onclick="changeLoginCredentials()">Αλλαγή username / PIN</button><button class="wide danger" style="margin-top:8px" onclick="forgetAndLock()">Αποσύνδεση και κατάργηση απομνημόνευσης</button></div>
 <div class="card"><h3>Ρυθμίσεις επιχείρησης</h3><label>Όριο VIP (€)</label><input id="vipLimit" type="number" value="500"><button class="wide" onclick="saveBusinessSettings()">Αποθήκευση</button></div>
 <div class="card"><h3>Ρυθμίσεις Google</h3><div class="notice">Βάλε εδώ το Google OAuth Client ID της εφαρμογής. Αποθηκεύεται μόνο στη συσκευή σου.</div><input id="googleClientId" placeholder="xxxxxxxx.apps.googleusercontent.com"><button class="wide" onclick="saveGoogleSettings()">Αποθήκευση Google Client ID</button></div>
 <div class="card"><h3>Backup δεδομένων</h3><button onclick="exportData()">Εξαγωγή</button> <label class="btn secondary">Εισαγωγή<input hidden id="importFile" type="file" accept="application/json" onchange="importData(event)"></label></div>
@@ -247,6 +255,40 @@ dialog{background:#091725;color:#fff;border:1px solid var(--line);box-shadow:0 3
 <div class="row"><button class="secondary" onclick="zDlg.close()">Ακύρωση</button><button onclick="saveZReport()">Αποθήκευση Ζ</button></div></div></dialog>
 
 <script>
+
+// ===== Secure local login v14 =====
+const AUTH_KEY="ucwm_auth_v14", AUTH_TRUST_KEY="ucwm_auth_trusted_v14", AUTH_FORCE_KEY="ucwm_auth_force_v14";
+const AUTH_MAX_ATTEMPTS=5, AUTH_LOCK_MS=5*60*1000, AUTH_IDLE_MS=5*60*1000;
+let authMode="login", authCountdownTimer=null, idleTimer=null, appUnlocked=false;
+function authData(){try{return JSON.parse(localStorage.getItem(AUTH_KEY)||"null")}catch(e){return null}}
+function authSetMessage(msg,ok=false){const el=document.getElementById('authMessage');if(!el)return;el.textContent=msg||'';el.classList.toggle('okmsg',!!ok)}
+function cleanUsername(v){return String(v||'').trim()}
+function cleanPin(v){return String(v||'').replace(/\D/g,'').slice(0,6)}
+function randomSalt(){const a=new Uint8Array(16);crypto.getRandomValues(a);return Array.from(a,b=>b.toString(16).padStart(2,'0')).join('')}
+async function hashText(v){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(v));return Array.from(new Uint8Array(b),x=>x.toString(16).padStart(2,'0')).join('')}
+async function credentialHash(username,pin,salt){return hashText(username.toLowerCase()+'|'+pin+'|'+salt)}
+function togglePin(id,btn){const el=document.getElementById(id);el.type=el.type==='password'?'text':'password';btn.textContent=el.type==='password'?'👁':'🙈'}
+function authRemaining(a){return Math.max(0,(+a.lockUntil||0)-Date.now())}
+function showAuthScreen(mode='login',message=''){
+ authMode=mode; appUnlocked=false; document.body.classList.add('auth-locked'); document.getElementById('authScreen').classList.remove('hidden');
+ const setup=mode==='setup'; document.getElementById('authTitle').textContent=setup?'Δημιουργία ασφαλούς εισόδου':'Ασφαλής είσοδος';document.getElementById('setupHelp').style.display=setup?'block':'none';document.getElementById('confirmPinWrap').style.display=setup?'block':'none';document.getElementById('rememberRow').style.display=setup?'none':'flex';document.getElementById('authSubmit').textContent=setup?'Αποθήκευση και είσοδος':'Σύνδεση';
+ const a=authData();document.getElementById('authUsername').value=setup?'':(a?.username||'');document.getElementById('authPin').value='';document.getElementById('authPinConfirm').value='';authSetMessage(message);updateAuthLockState();setTimeout(()=>document.getElementById(setup?'authUsername':'authPin').focus(),100)
+}
+function updateAuthLockState(){clearInterval(authCountdownTimer);const a=authData(),btn=document.getElementById('authSubmit');if(!a||authMode==='setup'){btn.disabled=false;return}const update=()=>{const ms=authRemaining(a);if(ms<=0){clearInterval(authCountdownTimer);btn.disabled=false;authSetMessage('Μπορείς να προσπαθήσεις ξανά.',true);return}btn.disabled=true;const sec=Math.ceil(ms/1000),m=Math.floor(sec/60),s=String(sec%60).padStart(2,'0');authSetMessage(`Πολλές λανθασμένες προσπάθειες. Νέα προσπάθεια σε ${m}:${s}.`)};update();if(btn.disabled)authCountdownTimer=setInterval(update,1000)}
+async function submitAuth(){const username=cleanUsername(document.getElementById('authUsername').value),pin=cleanPin(document.getElementById('authPin').value),btn=document.getElementById('authSubmit');document.getElementById('authPin').value=pin;if(!username){authSetMessage('Συμπλήρωσε username.');return}if(!/^\d{6}$/.test(pin)){authSetMessage('Το PIN πρέπει να αποτελείται από ακριβώς 6 ψηφία.');return}btn.disabled=true;
+ try{if(authMode==='setup'){const confirmPin=cleanPin(document.getElementById('authPinConfirm').value);if(pin!==confirmPin){authSetMessage('Τα δύο PIN δεν είναι ίδια.');btn.disabled=false;return}const salt=randomSalt(),hash=await credentialHash(username,pin,salt);localStorage.setItem(AUTH_KEY,JSON.stringify({username,salt,hash,failed:0,lockUntil:0,createdAt:new Date().toISOString()}));unlockApp(false);return}
+ const a=authData();if(!a){showAuthScreen('setup');return}if(authRemaining(a)>0){updateAuthLockState();return}const hash=await credentialHash(username,pin,a.salt);if(username.toLowerCase()===String(a.username).toLowerCase()&&hash===a.hash){a.failed=0;a.lockUntil=0;localStorage.setItem(AUTH_KEY,JSON.stringify(a));const remember=document.getElementById('authRemember').checked;if(remember)localStorage.setItem(AUTH_TRUST_KEY,'1');else localStorage.removeItem(AUTH_TRUST_KEY);sessionStorage.removeItem(AUTH_FORCE_KEY);unlockApp(remember);return}
+ a.failed=(+a.failed||0)+1;if(a.failed>=AUTH_MAX_ATTEMPTS){a.failed=0;a.lockUntil=Date.now()+AUTH_LOCK_MS;localStorage.setItem(AUTH_KEY,JSON.stringify(a));authSetMessage('Έγιναν 5 λανθασμένες προσπάθειες. Η είσοδος κλειδώθηκε για 5 λεπτά.');updateAuthLockState()}else{localStorage.setItem(AUTH_KEY,JSON.stringify(a));authSetMessage(`Λάθος username ή PIN. Απομένουν ${AUTH_MAX_ATTEMPTS-a.failed} προσπάθειες.`);btn.disabled=false;document.getElementById('authPin').value='';document.getElementById('authPin').focus()}}
+ catch(e){authSetMessage('Δεν ήταν δυνατή η σύνδεση. Δοκίμασε ξανά.');btn.disabled=false}}
+function unlockApp(remembered=false){appUnlocked=true;document.getElementById('authScreen').classList.add('hidden');document.body.classList.remove('auth-locked');authSetMessage('');resetIdleTimer();try{render();renderCalendar()}catch(e){} }
+function lockApp(clearRemember=false){appUnlocked=false;clearTimeout(idleTimer);if(clearRemember)localStorage.removeItem(AUTH_TRUST_KEY);sessionStorage.setItem(AUTH_FORCE_KEY,'1');showAuthScreen('login',clearRemember?'Έγινε αποσύνδεση από τη συσκευή.':'Η εφαρμογή κλειδώθηκε. Βάλε ξανά το PIN σου.')}
+function forgetAndLock(){if(confirm('Να γίνει αποσύνδεση και να μη σε θυμάται πλέον αυτή η συσκευή;'))lockApp(true)}
+function resetIdleTimer(){if(!appUnlocked)return;clearTimeout(idleTimer);idleTimer=setTimeout(()=>lockApp(false),AUTH_IDLE_MS)}
+['pointerdown','keydown','touchstart','scroll'].forEach(ev=>document.addEventListener(ev,()=>{if(appUnlocked)resetIdleTimer()},{passive:true}));
+async function changeLoginCredentials(){const current=prompt('Για επιβεβαίωση, γράψε το τωρινό εξαψήφιο PIN:');if(current===null)return;const a=authData();if(!a)return;const h=await credentialHash(a.username,cleanPin(current),a.salt);if(h!==a.hash){alert('Το τωρινό PIN είναι λάθος.');return}const username=cleanUsername(prompt('Νέο username:',a.username));if(!username)return;const pin=cleanPin(prompt('Νέο εξαψήφιο PIN:')||'');if(!/^\d{6}$/.test(pin)){alert('Το νέο PIN πρέπει να έχει ακριβώς 6 ψηφία.');return}const confirmPin=cleanPin(prompt('Γράψε ξανά το νέο PIN:')||'');if(pin!==confirmPin){alert('Τα PIN δεν είναι ίδια.');return}const salt=randomSalt(),hash=await credentialHash(username,pin,salt);localStorage.setItem(AUTH_KEY,JSON.stringify({username,salt,hash,failed:0,lockUntil:0,updatedAt:new Date().toISOString()}));localStorage.removeItem(AUTH_TRUST_KEY);alert('Το username και το PIN άλλαξαν. Θα χρειαστεί νέα σύνδεση.');lockApp(true)}
+function initAuth(){const a=authData();if(!a){showAuthScreen('setup');return}if(localStorage.getItem(AUTH_TRUST_KEY)==='1'&&sessionStorage.getItem(AUTH_FORCE_KEY)!=='1'&&authRemaining(a)<=0){unlockApp(true)}else showAuthScreen('login')}
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&!document.getElementById('authScreen').classList.contains('hidden'))submitAuth()});
+
 const KEY="ucwm_v2", GKEY="ucwm_google_client_id", DEFAULT_GOOGLE_CLIENT_ID="944899835221-fb873o8mer99qp2ntst4uve2tv8pk1g5.apps.googleusercontent.com";
 const initSrv=[
 ["Εσωτερικός Καθαρισμός",10,false],["Εξωτερικός Καθαρισμός",10,false],["Basic",20,true],["Special",25,true],["Extra Special",35,true],["Καθαρισμός Μηχανής",30,true],["Καθαρισμός Φαναριών",30,false]
@@ -999,10 +1041,7 @@ function selectApptCustomer(id){const c=db.customers.find(x=>x.id===id);if(!c)re
 const oldOpenAppointment=openAppointment;openAppointment=function(){oldOpenAppointment();$('apptCustomer').value='';$('apptCustomerSearch').value='';$('apptSelectedCustomer').classList.remove('show')}
 
 if("serviceWorker"in navigator)navigator.serviceWorker.register("service-worker.js").catch(()=>{});
-render();renderCalendar();
-</script>
-<script>
-if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("./service-worker.js",{updateViaCache:"none"}).catch(console.error));}
+initAuth();
 </script>
 </body>
 </html>
