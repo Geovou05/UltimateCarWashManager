@@ -7,7 +7,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon.svg">
 <title>Ultimate Car Wash Manager</title>
-<!-- Ultimate Car Wash Manager v9 - fixed Google Client ID -->
+<!-- Ultimate Car Wash Manager v11 - business dashboard, customers, loyalty, expenses, VAT -->
 <style>
 :root{--bg:#f4f5f7;--card:#fff;--ink:#111318;--muted:#6b7280;--line:#e5e7eb;--dark:#0b0b0d;--green:#16a34a;--red:#dc2626;--amber:#d97706}
 *{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--ink)}
@@ -57,7 +57,20 @@ dialog{border:0;border-radius:20px;width:calc(100% - 22px);max-width:620px;paddi
 .selected-customer{display:none;padding:10px 11px;border-radius:11px;background:#ecfdf5;border:1px solid #bbf7d0;margin:-2px 0 10px;font-size:13px}
 .selected-customer.show{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .selected-customer button{background:none;color:#111;padding:3px 6px;font-size:18px}
+.offer-box{margin-top:10px;padding:12px;border:1px solid #fde68a;background:#fffbeb;border-radius:13px}
+.offer-box.ready{border-color:#86efac;background:#f0fdf4}
+.offer-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:7px}
+.offer-progress{height:10px;border-radius:999px;background:#e5e7eb;overflow:hidden;margin:8px 0}
+.offer-progress span{display:block;height:100%;background:#111;border-radius:999px}
+.offer-ready{font-size:15px;font-weight:900;color:#166534;margin-top:7px}
+.offer-expired{font-weight:800;color:#991b1b;margin-top:7px}
+.offer-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}
+.offer-actions button{padding:9px 10px;font-size:13px}
+.checkbox-row{display:flex;align-items:center;gap:9px;margin:7px 0 10px;font-weight:750}
+.checkbox-row input{width:auto;margin:0}
 
+
+.status-dot{display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:24px;border-radius:999px;font-size:14px;margin-right:5px}.status-vip{background:#fef3c7}.status-active{background:#dcfce7}.status-warning{background:#fef3c7}.status-inactive{background:#fee2e2}.mini-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.metric{padding:11px;border:1px solid var(--line);border-radius:13px;background:#fafafa}.metric b{display:block;font-size:18px;margin-top:3px}.subtabs{display:flex;gap:7px;overflow-x:auto;padding-bottom:8px}.subtabs button{white-space:nowrap;padding:10px 12px}.subtabs button.on{background:#111;color:#fff}.subpage{display:none}.subpage.on{display:block}.history-row{padding:10px 0;border-bottom:1px solid var(--line)}.history-row:last-child{border:0}.amount-positive{color:#166534;font-weight:800}.amount-negative{color:#991b1b;font-weight:800}.warning-card{background:#fff7ed;border:1px solid #fed7aa}.danger-card{background:#fef2f2;border:1px solid #fecaca}.success-card{background:#f0fdf4;border:1px solid #bbf7d0}.split-label{display:grid;grid-template-columns:1fr 1fr;gap:8px}.small-note{font-size:11px;color:var(--muted);margin-top:-6px;margin-bottom:8px}.customer-finance{display:grid;grid-template-columns:repeat(2,1fr);gap:7px;margin-top:10px}.customer-finance div{background:#f8fafc;border:1px solid var(--line);border-radius:11px;padding:9px}.customer-finance b{display:block;font-size:16px}.reminder-due{border-left:4px solid var(--red);padding-left:9px}.reminder-upcoming{border-left:4px solid var(--amber);padding-left:9px}.offer-wash-option{padding:10px;border-radius:12px;background:#fffbeb;border:1px solid #fde68a;margin-bottom:10px}.table-scroll{overflow:auto}.simple-table{width:100%;border-collapse:collapse;font-size:13px}.simple-table th,.simple-table td{padding:8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}.kpi-title{font-size:11px;color:var(--muted)}
 </style>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
@@ -73,6 +86,13 @@ dialog{border:0;border-radius:20px;width:calc(100% - 22px);max-width:620px;paddi
 </div>
 <div class="card"><button class="wide hero" onclick="openWash()">🚗 Νέο Πλύσιμο</button></div>
 <div class="card"><h3>Σήμερα</h3><div id="todayList" class="muted"></div></div>
+<div class="card"><h3>🔔 Υπενθυμίσεις</h3><div id="homeReminders" class="muted"></div></div>
+<div class="card"><h3>Γρήγορη εικόνα μήνα</h3><div class="mini-grid">
+<div class="metric"><span class="kpi-title">Εισπράξεις</span><b id="dashCollections">0€</b></div>
+<div class="metric"><span class="kpi-title">Αποδείξεις</span><b id="dashReceipts">0€</b></div>
+<div class="metric"><span class="kpi-title">Έξοδα</span><b id="dashExpenses">0€</b></div>
+<div class="metric"><span class="kpi-title">Εκτίμηση ΦΠΑ</span><b id="dashVat">0€</b></div>
+</div></div>
 </section>
 
 <section id="customers" class="section">
@@ -119,15 +139,33 @@ dialog{border:0;border-radius:20px;width:calc(100% - 22px);max-width:620px;paddi
 </section>
 
 <section id="more" class="section">
-<div class="grid"><div class="card"><div class="label">Τζίρος μήνα</div><div class="stat" id="monthRevenue">0€</div></div><div class="card"><div class="label">Πλυσίματα μήνα</div><div class="stat" id="monthCars">0</div></div></div>
+<div class="card"><div class="subtabs">
+<button class="on" onclick="moreTab('overview',this)">📊 Στατιστικά</button>
+<button onclick="moreTab('expenses',this)">💸 Έξοδα</button>
+<button onclick="moreTab('finance',this)">🧾 Οικονομικά/ΦΠΑ</button>
+<button onclick="moreTab('settings',this)">⚙️ Ρυθμίσεις</button>
+</div></div>
+<div id="more-overview" class="subpage on">
+<div class="grid"><div class="card"><div class="label">Εισπράξεις μήνα</div><div class="stat" id="monthRevenue">0€</div></div><div class="card"><div class="label">Πλυσίματα μήνα</div><div class="stat" id="monthCars">0</div></div></div>
+<div class="card"><h3>Στατιστικά επιχείρησης</h3><div id="businessStats"></div></div>
+<div class="card"><h3>Καλύτεροι πελάτες</h3><div id="topCustomers"></div></div>
+<div class="card"><h3>Δημοφιλέστερες υπηρεσίες</h3><div id="topServices"></div></div>
 <div class="card"><h3>Οφειλές</h3><div id="debts"></div></div>
-<div class="card">
-<h3>Ρυθμίσεις Google</h3>
-<div class="notice">Βάλε εδώ το Google OAuth Client ID της εφαρμογής. Αποθηκεύεται μόνο στη συσκευή σου.</div>
-<input id="googleClientId" placeholder="xxxxxxxx.apps.googleusercontent.com">
-<button class="wide" onclick="saveGoogleSettings()">Αποθήκευση Google Client ID</button>
 </div>
+<div id="more-expenses" class="subpage">
+<div class="card"><button class="wide" onclick="openExpense()">+ Νέο έξοδο</button></div>
+<div class="card"><div class="row"><input id="expenseFrom" type="date" onchange="renderExpenses()"><input id="expenseTo" type="date" onchange="renderExpenses()"></div><div id="expensesList"></div></div>
+</div>
+<div id="more-finance" class="subpage">
+<div class="card"><div class="row"><input id="financeFrom" type="date" onchange="renderFinance()"><input id="financeTo" type="date" onchange="renderFinance()"></div></div>
+<div class="card"><h3>Οικονομική εικόνα</h3><div id="financeStats"></div></div>
+<div class="card"><h3>ΦΠΑ</h3><div id="vatStats"></div><div class="notice">Οι υπολογισμοί είναι εκτίμηση βάσει των καταχωρίσεων της εφαρμογής. Η τελική φορολογική υποχρέωση επιβεβαιώνεται από τον λογιστή.</div></div>
+</div>
+<div id="more-settings" class="subpage">
+<div class="card"><h3>Ρυθμίσεις επιχείρησης</h3><label>Όριο VIP (€)</label><input id="vipLimit" type="number" value="500"><button class="wide" onclick="saveBusinessSettings()">Αποθήκευση</button></div>
+<div class="card"><h3>Ρυθμίσεις Google</h3><div class="notice">Βάλε εδώ το Google OAuth Client ID της εφαρμογής. Αποθηκεύεται μόνο στη συσκευή σου.</div><input id="googleClientId" placeholder="xxxxxxxx.apps.googleusercontent.com"><button class="wide" onclick="saveGoogleSettings()">Αποθήκευση Google Client ID</button></div>
 <div class="card"><h3>Backup δεδομένων</h3><button onclick="exportData()">Εξαγωγή</button> <label class="btn secondary">Εισαγωγή<input hidden id="importFile" type="file" accept="application/json" onchange="importData(event)"></label></div>
+</div>
 </section>
 </main>
 
@@ -139,30 +177,37 @@ dialog{border:0;border-radius:20px;width:calc(100% - 22px);max-width:620px;paddi
 <button onclick="tab('more',this)">•••<br>Περισσότερα</button>
 </nav>
 
-<dialog id="washDlg"><div class="dlg"><div class="dlghead"><h3>Νέο πλύσιμο</h3><button class="link" onclick="washDlg.close()">✕</button></div>
-<div class="customer-picker">
-<input id="washCustomerSearch" autocomplete="off" placeholder="Αναζήτηση πελάτη: όνομα, τηλέφωνο, πινακίδα ή όχημα" oninput="searchWashCustomers()" onfocus="searchWashCustomers()">
-<input id="washCustomer" type="hidden">
-<div id="washCustomerResults" class="customer-results"></div>
-</div>
-<div id="selectedWashCustomer" class="selected-customer"></div>
+<dialog id="washDlg"><div class="dlg"><div class="dlghead"><h3>Νέο πλύσιμο / είσπραξη</h3><button class="link" onclick="washDlg.close()">✕</button></div>
+<div class="customer-picker"><input id="washCustomerSearch" autocomplete="off" placeholder="Αναζήτηση πελάτη: όνομα, τηλέφωνο, πινακίδα ή όχημα" oninput="searchWashCustomers()" onfocus="searchWashCustomers()"><input id="washCustomer" type="hidden"><div id="washCustomerResults" class="customer-results"></div></div>
+<div id="selectedWashCustomer" class="selected-customer"></div><div id="washCustomerStatus"></div>
 <div class="services" id="favServices"></div><select id="washService"></select>
-<input id="washPrice" type="number" step="0.01" placeholder="Τιμή">
-<select id="washPayment"><option value="paid">Πληρώθηκε</option><option value="partial">Μερική πληρωμή</option><option value="debt">Οφειλή</option></select>
-<input id="washPaid" type="number" step="0.01" placeholder="Ποσό που πληρώθηκε (αν είναι μερική)">
+<label>Περιγραφή εργασίας / επιπλέον υπηρεσίες</label><textarea id="washNotes" placeholder="Τι ακριβώς έγινε στο όχημα"></textarea>
+<div class="split-label"><div><label>Ποσό απόδειξης</label><input id="washReceipt" type="number" step="0.01" placeholder="0,00"></div><div><label>Ποσό είσπραξης</label><input id="washCollection" type="number" step="0.01" placeholder="0,00"></div></div>
+<div class="small-note">Ο ΦΠΑ υπολογίζεται μόνο από το ποσό απόδειξης. Η είσπραξη καταγράφεται ξεχωριστά χωρίς ΦΠΑ.</div>
+<div class="row"><select id="washVat"><option value="24">ΦΠΑ απόδειξης 24%</option><option value="13">ΦΠΑ απόδειξης 13%</option><option value="0">Χωρίς ΦΠΑ / 0%</option></select><select id="washPaymentMethod"><option>Μετρητά</option><option>Κάρτα</option><option>IRIS</option><option>Κατάθεση</option><option>Άλλο</option></select></div>
+<select id="washPayment"><option value="paid">Εξοφλήθηκε</option><option value="partial">Μερική εξόφληση / υπόλοιπο</option><option value="debt">Οφειλή</option></select>
+<div id="washOfferOptions"></div>
 <div class="row"><button class="secondary" onclick="washDlg.close()">Ακύρωση</button><button onclick="saveWash()">Καταχώρηση</button></div></div></dialog>
 
-<dialog id="customerDlg"><div class="dlg"><div class="dlghead"><h3>Πελάτης</h3><button class="link" onclick="customerDlg.close()">✕</button></div>
-<input id="custId" type="hidden"><input id="custName" placeholder="Όνομα"><input id="custPhone" placeholder="Τηλέφωνο"><input id="custPlate" placeholder="Πινακίδα"><input id="custCar" placeholder="Αυτοκίνητο"><textarea id="custNotes" placeholder="Σημειώσεις"></textarea>
-<div class="row"><button class="secondary" onclick="customerDlg.close()">Ακύρωση</button><button onclick="saveCustomer()">Αποθήκευση</button></div></div></dialog>
+<dialog id="customerDlg"><div class="dlg"><div class="dlghead"><h3>Καρτέλα πελάτη</h3><button class="link" onclick="customerDlg.close()">✕</button></div>
+<input id="custId" type="hidden"><input id="custName" placeholder="Όνομα"><input id="custPhone" placeholder="Τηλέφωνο"><input id="custPlate" placeholder="Πινακίδα"><input id="custCar" placeholder="Αυτοκίνητο"><textarea id="custNotes" placeholder="Γενικές σημειώσεις"></textarea>
+<div id="custStatusBox"></div><div id="custStatsBox"></div>
+<label class="checkbox-row"><input id="custOfferActive" type="checkbox" onchange="toggleCustomerOfferFields()"> Έχει κάρτα προσφοράς</label>
+<div id="custOfferFields" style="display:none"><label class="muted">Ημερομηνία παραλαβής κάρτας</label><input id="custOfferStart" type="date"><div id="custOfferEditor"></div></div>
+<div id="custRemindersBox"></div><div id="custHistoryBox"></div>
+<div class="row"><button class="secondary" onclick="customerDlg.close()">Κλείσιμο</button><button onclick="saveCustomer()">Αποθήκευση</button></div></div></dialog>
 
 <dialog id="serviceDlg"><div class="dlg"><div class="dlghead"><h3>Υπηρεσία</h3><button class="link" onclick="serviceDlg.close()">✕</button></div>
-<input id="srvId" type="hidden"><input id="srvName" placeholder="Όνομα"><input id="srvPrice" type="number" step="0.01" placeholder="Τιμή"><label><input id="srvFav" type="checkbox" style="width:auto"> Συχνή υπηρεσία</label>
+<input id="srvId" type="hidden"><input id="srvName" placeholder="Όνομα"><input id="srvPrice" type="number" step="0.01" placeholder="Τιμή"><select id="srvVat"><option value="24">ΦΠΑ 24%</option><option value="13">ΦΠΑ 13%</option><option value="0">ΦΠΑ 0%</option></select><label><input id="srvFav" type="checkbox" style="width:auto"> Συχνή υπηρεσία</label>
 <div class="row"><button class="secondary" onclick="serviceDlg.close()">Ακύρωση</button><button onclick="saveService()">Αποθήκευση</button></div></div></dialog>
 
 <dialog id="apptDlg"><div class="dlg"><div class="dlghead"><h3>Νέο ραντεβού</h3><button class="link" onclick="apptDlg.close()">✕</button></div>
-<input id="apptTitle" placeholder="Τίτλος π.χ. Γιώργος - BMW - Basic"><input id="apptStart" type="datetime-local"><input id="apptEnd" type="datetime-local"><textarea id="apptNotes" placeholder="Σημειώσεις"></textarea>
+<div class="customer-picker"><input id="apptCustomerSearch" autocomplete="off" placeholder="Αναζήτηση πελάτη" oninput="searchApptCustomers()" onfocus="searchApptCustomers()"><input id="apptCustomer" type="hidden"><div id="apptCustomerResults" class="customer-results"></div></div><div id="apptSelectedCustomer" class="selected-customer"></div><input id="apptTitle" placeholder="Τίτλος π.χ. Γιώργος - BMW - Basic"><input id="apptStart" type="datetime-local"><input id="apptEnd" type="datetime-local"><textarea id="apptNotes" placeholder="Σημειώσεις"></textarea>
 <div class="row"><button class="secondary" onclick="apptDlg.close()">Ακύρωση</button><button onclick="createCalendarEvent()">Αποθήκευση στο Google</button></div></div></dialog>
+
+<dialog id="expenseDlg"><div class="dlg"><div class="dlghead"><h3>Νέο έξοδο</h3><button class="link" onclick="expenseDlg.close()">✕</button></div>
+<input id="expId" type="hidden"><label>Ημερομηνία</label><input id="expDate" type="date"><input id="expDescription" placeholder="Πού δόθηκαν χρήματα / αιτιολογία"><select id="expCategory"><option>Χημικά</option><option>Αναλώσιμα</option><option>Εξοπλισμός</option><option>Συντήρηση</option><option>Ρεύμα</option><option>Νερό</option><option>Ενοίκιο</option><option>Μισθοδοσία</option><option>Καύσιμα</option><option>Λογιστής</option><option>Ασφάλειες</option><option>Τηλέφωνο / Internet</option><option>Άλλο</option></select>
+<input id="expAmount" type="number" step="0.01" placeholder="Συνολικό ποσό εξόδου"><select id="expVat"><option value="24">ΦΠΑ 24%</option><option value="13">ΦΠΑ 13%</option><option value="0">Χωρίς ΦΠΑ / 0%</option></select><label class="checkbox-row"><input id="expInvoice" type="checkbox"> Υπάρχει τιμολόγιο</label><input id="expInvoiceNumber" placeholder="Αριθμός τιμολογίου (προαιρετικά)"><textarea id="expNotes" placeholder="Σημειώσεις"></textarea><div class="row"><button class="secondary" onclick="expenseDlg.close()">Ακύρωση</button><button onclick="saveExpense()">Αποθήκευση</button></div></div></dialog>
 
 <script>
 const KEY="ucwm_v2", GKEY="ucwm_google_client_id", DEFAULT_GOOGLE_CLIENT_ID="944899835221-fb873o8mer99qp2ntst4uve2tv8pk1g5.apps.googleusercontent.com";
@@ -188,7 +233,65 @@ function render(){
  $("todayList").innerHTML=td.length?td.map(w=>`<div class="list-item"><b>${w.customer||"Χωρίς πελάτη"}</b> · ${w.plate||""}<br>${w.service} — ${eur(w.price)} ${w.debt?`<span class="pill red">Οφειλή ${eur(w.debt)}</span>`:`<span class="pill green">Πληρώθηκε</span>`}<br><button class="link" onclick="undoWash('${w.id}')">↩ Αναίρεση</button></div>`).join(""):"Δεν υπάρχουν καταχωρήσεις.";
  renderCustomers();renderServices();renderMore();fillWash();
 }
-function renderCustomers(){const q=($("search").value||"").toLowerCase();let a=db.customers.filter(c=>(c.name+" "+c.phone+" "+c.plate+" "+c.car).toLowerCase().includes(q));$("customersList").innerHTML=a.length?a.map(c=>`<div class="list-item"><b>${c.name||"Χωρίς όνομα"}</b><br>${c.plate||""} ${c.car||""}<br><span class="muted">${c.phone||""}</span><br><button class="link" onclick="editCustomer('${c.id}')">Επεξεργασία</button></div>`).join(""):"Δεν υπάρχουν πελάτες."}
+function ensureOffer(c){
+  if(!c.offerCard) c.offerCard={active:false,startDate:"",stamps:[],giftRedeemed:false};
+  if(!Array.isArray(c.offerCard.stamps)) c.offerCard.stamps=[];
+  return c.offerCard;
+}
+function offerEndDate(c){
+  const o=ensureOffer(c);
+  if(!o.startDate) return null;
+  const d=new Date(o.startDate+"T12:00:00");
+  d.setFullYear(d.getFullYear()+1);
+  return d;
+}
+function offerIsExpired(c){
+  const end=offerEndDate(c);
+  if(!end) return false;
+  const today=new Date(); today.setHours(0,0,0,0);
+  end.setHours(23,59,59,999);
+  return today>end;
+}
+function offerValidStamps(c){
+  const o=ensureOffer(c);
+  const start=o.startDate?new Date(o.startDate+"T00:00:00"):null;
+  const end=offerEndDate(c);
+  return o.stamps.filter(x=>{
+    const d=new Date(x+"T12:00:00");
+    return !isNaN(d) && (!start||d>=start) && (!end||d<=end);
+  });
+}
+function offerCount(c){return Math.min(10,offerValidStamps(c).length)}
+function offerMonthKey(v){return String(v||"").slice(0,7)}
+function offerSummaryHtml(c,editable=false){
+  const o=ensureOffer(c);
+  if(!o.active) return "";
+  const count=offerCount(c), expired=offerIsExpired(c), ready=count>=10&&!o.giftRedeemed&&!expired;
+  const end=offerEndDate(c);
+  const endText=end?end.toLocaleDateString("el-GR"):"—";
+  const pct=Math.min(100,count*10);
+  return `<div class="offer-box ${ready?"ready":""}">
+    <div class="offer-head"><b>🎁 Κάρτα προσφοράς</b><span class="pill ${ready?"green":"amber"}">${count}/10</span></div>
+    <div class="muted">Λήξη: ${escapeHtml(endText)} · 1 πληρωμένο πλύσιμο ανά μήνα</div>
+    <div class="offer-progress"><span style="width:${pct}%"></span></div>
+    ${ready?'<div class="offer-ready">🎉 ΤΟ ΕΠΟΜΕΝΟ ΠΛΥΣΙΜΟ ΕΙΝΑΙ ΔΩΡΟ!</div>':""}
+    ${o.giftRedeemed?'<div class="offer-ready">✅ Το δωρεάν πλύσιμο χρησιμοποιήθηκε.</div>':""}
+    ${expired?'<div class="offer-expired">⚠️ Η κάρτα έχει λήξει.</div>':""}
+    ${editable?`<div class="offer-actions">
+      <button type="button" class="ok" onclick="addOfferStampFromEditor()" ${expired||count>=10||o.giftRedeemed?"disabled":""}>+ Πληρωμένο πλύσιμο</button>
+      <button type="button" class="secondary" onclick="undoOfferStampFromEditor()" ${count===0?"disabled":""}>↩ Αφαίρεση τελευταίου</button>
+      ${ready?'<button type="button" onclick="redeemOfferGiftFromEditor()">🎁 Καταχώρηση δώρου</button>':""}
+    </div>`:""}
+  </div>`;
+}
+function renderCustomers(){
+  const q=($("search").value||"").toLowerCase();
+  let a=db.customers.filter(c=>(c.name+" "+c.phone+" "+c.plate+" "+c.car).toLowerCase().includes(q));
+  $("customersList").innerHTML=a.length?a.map(c=>{
+    const o=ensureOffer(c), count=offerCount(c), ready=o.active&&count>=10&&!o.giftRedeemed&&!offerIsExpired(c);
+    return `<div class="list-item"><b>${c.name||"Χωρίς όνομα"}</b> ${ready?'<span class="pill green">ΕΠΟΜΕΝΟ ΔΩΡΟ</span>':o.active?`<span class="pill amber">Κάρτα ${count}/10</span>`:""}<br>${c.plate||""} ${c.car||""}<br><span class="muted">${c.phone||""}</span>${o.active?offerSummaryHtml(c,false):""}<br><button class="link" onclick="editCustomer('${c.id}')">Επεξεργασία</button></div>`;
+  }).join(""):"Δεν υπάρχουν πελάτες."
+}
 function renderServices(){$("servicesList").innerHTML=db.services.map(s=>`<div class="list-item"><b>${s.favorite?"⭐ ":""}${s.name}</b><span style="float:right">${eur(s.price)}</span><br><button class="link" onclick="editService('${s.id}')">Επεξεργασία</button></div>`).join("")}
 function renderMore(){const m=new Date().toISOString().slice(0,7),a=db.washes.filter(w=>w.date.slice(0,7)===m);$("monthRevenue").textContent=eur(a.reduce((s,w)=>s+w.paid,0));$("monthCars").textContent=a.length;let d=db.washes.filter(w=>w.debt>0);$("debts").innerHTML=d.length?d.map(w=>`<div class="list-item"><b>${w.customer}</b> ${w.plate}<span class="pill red" style="float:right">${eur(w.debt)}</span><br><button class="link" onclick="settle('${w.id}')">Εξόφληση</button></div>`).join(""):"Καμία οφειλή."; $("googleClientId").value=localStorage.getItem(GKEY)||DEFAULT_GOOGLE_CLIENT_ID}
 function fillWash(){
@@ -283,9 +386,71 @@ function saveWash(){
   }
   let c=db.customers.find(x=>x.id===$("washCustomer").value),s=db.services.find(x=>x.id===$("washService").value),price=+$("washPrice").value||0,p=$("washPayment").value,paid=price,debt=0;if(p==="debt"){paid=0;debt=price}if(p==="partial"){paid=+$("washPaid").value||0;debt=Math.max(0,price-paid)}db.washes.unshift({id:crypto.randomUUID(),date:new Date().toISOString(),customer:c?.name||"",plate:c?.plate||"",service:s?.name||"Άλλη",price,paid,debt});save();washDlg.close()}
 function undoWash(id){if(confirm("Αναίρεση καταχώρησης;")){db.washes=db.washes.filter(x=>x.id!==id);save()}} function settle(id){let w=db.washes.find(x=>x.id===id);if(w&&confirm("Καταχώρηση εξόφλησης;")){w.paid+=w.debt;w.debt=0;save()}}
-function openCustomer(){["custId","custName","custPhone","custPlate","custCar","custNotes"].forEach(i=>$(i).value="");customerDlg.showModal()}
-function saveCustomer(){let id=$("custId").value,c=id?db.customers.find(x=>x.id===id):{id:crypto.randomUUID()};if(!id)db.customers.push(c);Object.assign(c,{name:$("custName").value,phone:$("custPhone").value,plate:$("custPlate").value.toUpperCase(),car:$("custCar").value,notes:$("custNotes").value});save();customerDlg.close()}
-function editCustomer(id){let c=db.customers.find(x=>x.id===id);$("custId").value=c.id;$("custName").value=c.name;$("custPhone").value=c.phone;$("custPlate").value=c.plate;$("custCar").value=c.car;$("custNotes").value=c.notes;customerDlg.showModal()}
+function toggleCustomerOfferFields(){
+  const active=$("custOfferActive").checked;
+  $("custOfferFields").style.display=active?"block":"none";
+  if(active&&!$("custOfferStart").value) $("custOfferStart").value=day();
+  renderCustomerOfferEditor();
+}
+function currentEditedCustomer(){
+  const id=$("custId").value;
+  return id?db.customers.find(x=>x.id===id):null;
+}
+function renderCustomerOfferEditor(){
+  const c=currentEditedCustomer();
+  if(!c||!$("custOfferActive").checked){$("custOfferEditor").innerHTML="";return}
+  const o=ensureOffer(c);
+  o.active=true;
+  if($("custOfferStart").value) o.startDate=$("custOfferStart").value;
+  $("custOfferEditor").innerHTML=offerSummaryHtml(c,true);
+}
+function addOfferStampFromEditor(){
+  const c=currentEditedCustomer(); if(!c)return;
+  const o=ensureOffer(c);
+  o.active=true; o.startDate=$("custOfferStart").value||day();
+  if(offerIsExpired(c)){alert("Η κάρτα έχει λήξει.");return}
+  if(offerCount(c)>=10){alert("Έχουν ήδη συμπληρωθεί 10 πλυσίματα. Το επόμενο είναι δώρο.");return}
+  const stampDate=prompt("Ημερομηνία πληρωμένου πλυσίματος (ΕΕΕΕ-ΜΜ-ΗΗ):",day());
+  if(!stampDate)return;
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(stampDate)){alert("Η ημερομηνία δεν είναι σωστή.");return}
+  const start=new Date(o.startDate+"T00:00:00"), stamp=new Date(stampDate+"T12:00:00"), end=offerEndDate(c);
+  if(stamp<start||stamp>end){alert("Το πλύσιμο πρέπει να είναι μέσα στη διάρκεια της κάρτας.");return}
+  if(o.stamps.some(x=>offerMonthKey(x)===offerMonthKey(stampDate))){alert("Έχει ήδη καταχωρηθεί πλύσιμο για αυτόν τον μήνα.");return}
+  o.stamps.push(stampDate); o.stamps.sort();
+  save(); renderCustomerOfferEditor();
+  if(offerCount(c)===10) alert("🎉 Συμπληρώθηκαν 10 πληρωμένα πλυσίματα! Το επόμενο είναι ΔΩΡΟ.");
+}
+function undoOfferStampFromEditor(){
+  const c=currentEditedCustomer(); if(!c)return;
+  const o=ensureOffer(c);
+  if(!o.stamps.length)return;
+  if(confirm("Να αφαιρεθεί το τελευταίο καταχωρημένο πλύσιμο;")){o.stamps.sort();o.stamps.pop();o.giftRedeemed=false;save();renderCustomerOfferEditor()}
+}
+function redeemOfferGiftFromEditor(){
+  const c=currentEditedCustomer(); if(!c)return;
+  const o=ensureOffer(c);
+  if(offerCount(c)<10||offerIsExpired(c))return;
+  if(confirm("Να καταχωρηθεί ότι ο πελάτης χρησιμοποίησε το δωρεάν πλύσιμο;")){o.giftRedeemed=true;save();renderCustomerOfferEditor()}
+}
+function openCustomer(){
+  ["custId","custName","custPhone","custPlate","custCar","custNotes","custOfferStart"].forEach(i=>$(i).value="");
+  $("custOfferActive").checked=false;$("custOfferFields").style.display="none";$("custOfferEditor").innerHTML="";customerDlg.showModal()
+}
+function saveCustomer(){
+  let id=$("custId").value,c=id?db.customers.find(x=>x.id===id):{id:crypto.randomUUID()};
+  if(!id)db.customers.push(c);
+  const o=ensureOffer(c);
+  o.active=$("custOfferActive").checked;
+  if(o.active)o.startDate=$("custOfferStart").value||o.startDate||day();
+  Object.assign(c,{name:$("custName").value,phone:$("custPhone").value,plate:$("custPlate").value.toUpperCase(),car:$("custCar").value,notes:$("custNotes").value});
+  save();customerDlg.close()
+}
+function editCustomer(id){
+  let c=db.customers.find(x=>x.id===id),o=ensureOffer(c);
+  $("custId").value=c.id;$("custName").value=c.name;$("custPhone").value=c.phone;$("custPlate").value=c.plate;$("custCar").value=c.car;$("custNotes").value=c.notes;
+  $("custOfferActive").checked=!!o.active;$("custOfferStart").value=o.startDate||day();toggleCustomerOfferFields();customerDlg.showModal();renderCustomerOfferEditor()
+}
+$("custOfferStart").addEventListener("change",()=>{const c=currentEditedCustomer();if(c){ensureOffer(c).startDate=$("custOfferStart").value;renderCustomerOfferEditor()}});
 function openService(){["srvId","srvName","srvPrice"].forEach(i=>$(i).value="");$("srvFav").checked=false;serviceDlg.showModal()}
 function saveService(){let id=$("srvId").value,s=id?db.services.find(x=>x.id===id):{id:crypto.randomUUID(),history:[]};if(!id)db.services.push(s);let np=+$("srvPrice").value||0;if(s.price!==np)s.history.push({date:new Date().toISOString(),price:np});Object.assign(s,{name:$("srvName").value||"Χωρίς όνομα",price:np,favorite:$("srvFav").checked});save();serviceDlg.close()}
 function editService(id){let s=db.services.find(x=>x.id===id);$("srvId").value=s.id;$("srvName").value=s.name;$("srvPrice").value=s.price;$("srvFav").checked=s.favorite;serviceDlg.showModal()}
@@ -721,6 +886,72 @@ async function createCalendarEvent(){
     alert(message);
   }
 }
+
+
+// ===== v11 business management layer =====
+function migrateV11(){
+ db.customers=db.customers||[];db.services=db.services||[];db.washes=db.washes||[];db.expenses=db.expenses||[];db.settings=db.settings||{vipLimit:500};
+ db.customers.forEach(c=>{c.reminders=c.reminders||[];ensureOffer(c)});
+ db.services.forEach(s=>{if(s.vat===undefined)s.vat=24});
+ db.washes.forEach(w=>{if(w.customerId===undefined){const c=db.customers.find(c=>c.name===w.customer&&(!w.plate||c.plate===w.plate));w.customerId=c?.id||""}if(w.receiptAmount===undefined)w.receiptAmount=Number(w.price)||0;if(w.collectionAmount===undefined)w.collectionAmount=Number(w.paid)||0;if(w.vatRate===undefined)w.vatRate=24;if(!w.paymentMethod)w.paymentMethod="Μετρητά";if(!w.notes)w.notes=""});
+}
+migrateV11();
+function dateOnly(v){return String(v||"").slice(0,10)}
+function inRange(v,from,to){const d=dateOnly(v);return(!from||d>=from)&&(!to||d<=to)}
+function monthsSince(v){if(!v)return Infinity;const a=new Date(v),b=new Date();return (b.getFullYear()-a.getFullYear())*12+(b.getMonth()-a.getMonth())-(b.getDate()<a.getDate()?1:0)}
+function customerWashes(c){return db.washes.filter(w=>w.customerId===c.id||(!w.customerId&&w.customer===c.name))}
+function customerTotals(c){const ws=customerWashes(c);return{visits:ws.length,collections:ws.reduce((a,w)=>a+(+w.collectionAmount||0),0),receipts:ws.reduce((a,w)=>a+(+w.receiptAmount||0),0),first:ws.length?ws.map(w=>w.date).sort()[0]:"",last:ws.length?ws.map(w=>w.date).sort().at(-1):""}}
+function customerStatus(c){const t=customerTotals(c),vip=+(db.settings.vipLimit||500);if(t.collections>=vip)return{icon:"🥇",label:"VIP",cls:"status-vip"};const m=monthsSince(t.last);if(m<=2)return{icon:"🟢",label:"Ενεργός",cls:"status-active"};if(m<=6)return{icon:"🟡",label:"2–6 μήνες",cls:"status-warning"};return{icon:"🔴",label:t.last?"Πάνω από 6 μήνες":"Χωρίς επίσκεψη",cls:"status-inactive"}}
+function statusHtml(c,full=false){const x=customerStatus(c);return `<span class="status-dot ${x.cls}" title="${x.label}">${x.icon}</span>${full?`<b>${x.label}</b>`:""}`}
+function vatPart(gross,rate){rate=+rate||0;return rate?((+gross||0)*rate/(100+rate)):0}
+function dueReminders(){const today=day();return db.customers.flatMap(c=>(c.reminders||[]).filter(r=>!r.done&&r.date<=today).map(r=>({...r,customer:c}))).sort((a,b)=>a.date.localeCompare(b.date))}
+function moreTab(id,b){document.querySelectorAll('.subpage').forEach(x=>x.classList.remove('on'));document.querySelectorAll('.subtabs button').forEach(x=>x.classList.remove('on'));$('more-'+id).classList.add('on');b.classList.add('on');if(id==='expenses')renderExpenses();if(id==='finance')renderFinance()}
+function render(){
+ migrateV11();const td=db.washes.filter(w=>dateOnly(w.date)===day()),month=day().slice(0,7),mw=db.washes.filter(w=>dateOnly(w.date).slice(0,7)===month),me=db.expenses.filter(e=>e.date.slice(0,7)===month);
+ $('todayCars').textContent=td.length;$('todayRevenue').textContent=eur(td.reduce((a,w)=>a+(+w.collectionAmount||0),0));$('debtTotal').textContent=eur(db.washes.reduce((a,w)=>a+(+w.debt||0),0));$('customerCount').textContent=db.customers.length;
+ $('todayList').innerHTML=td.length?td.map(w=>`<div class="list-item"><b>${escapeHtml(w.customer||'Χωρίς πελάτη')}</b> · ${escapeHtml(w.plate||'')}<br>${escapeHtml(w.service)} — Απόδειξη ${eur(w.receiptAmount)} · Είσπραξη ${eur(w.collectionAmount)} ${w.debt?`<span class="pill red">Οφειλή ${eur(w.debt)}</span>`:''}<br><button class="link" onclick="undoWash('${w.id}')">↩ Αναίρεση</button></div>`).join(''):'Δεν υπάρχουν καταχωρήσεις.';
+ const dr=dueReminders();$('homeReminders').innerHTML=dr.length?dr.slice(0,8).map(r=>`<div class="list-item reminder-due"><b>${escapeHtml(r.customer.name)}</b> — ${new Date(r.date+'T12:00').toLocaleDateString('el-GR')}<br>${escapeHtml(r.text)} <button class="link" onclick="completeReminder('${r.customer.id}','${r.id}')">✓ Έγινε</button></div>`).join(''):'Καμία ληξιπρόθεσμη υπενθύμιση.';
+ $('dashCollections').textContent=eur(mw.reduce((a,w)=>a+(+w.collectionAmount||0),0));$('dashReceipts').textContent=eur(mw.reduce((a,w)=>a+(+w.receiptAmount||0),0));$('dashExpenses').textContent=eur(me.reduce((a,e)=>a+(+e.amount||0),0));$('dashVat').textContent=eur(mw.reduce((a,w)=>a+vatPart(w.receiptAmount,w.vatRate),0)-me.filter(e=>e.invoice).reduce((a,e)=>a+vatPart(e.amount,e.vatRate),0));
+ renderCustomers();renderServices();renderMore();fillWash();
+}
+function renderCustomers(){const q=normalizeSearch($('search').value);let a=db.customers.filter(c=>normalizeSearch(`${c.name} ${c.phone} ${c.plate} ${c.car}`).includes(q));$('customersList').innerHTML=a.length?a.map(c=>{const t=customerTotals(c),o=ensureOffer(c),count=offerCount(c),ready=o.active&&count>=10&&!o.giftRedeemed&&!offerIsExpired(c);return `<div class="list-item"><b>${statusHtml(c)} ${escapeHtml(c.name||'Χωρίς όνομα')}</b> ${ready?'<span class="pill green">ΕΠΟΜΕΝΟ ΔΩΡΟ</span>':o.active?`<span class="pill amber">Κάρτα ${count}/10</span>`:''}<br>${escapeHtml([c.plate,c.car].filter(Boolean).join(' · '))}<br><span class="muted">${escapeHtml(c.phone||'')} · ${t.visits} επισκέψεις · ${eur(t.collections)}</span><br><button class="link" onclick="editCustomer('${c.id}')">Άνοιγμα καρτέλας</button></div>`}).join(''):'Δεν βρέθηκαν πελάτες.'}
+function fillWash(){
+ $('washService').innerHTML=db.services.map(s=>`<option value="${s.id}">${escapeHtml(s.name)} — ${eur(s.price)}</option>`).join('');$('favServices').innerHTML=db.services.filter(s=>s.favorite).map(s=>`<button class="service" onclick="pickSrv('${s.id}')">${escapeHtml(s.name)}<br><b>${eur(s.price)}</b></button>`).join('');if(db.services[0]&&!$('washService').value)pickSrv(db.services[0].id)
+}
+function pickSrv(id){$('washService').value=id;const s=db.services.find(x=>x.id===id);if(s){$('washReceipt').value=s.price;$('washCollection').value=s.price;$('washVat').value=String(s.vat??24)}}
+function selectWashCustomer(id){const c=db.customers.find(x=>x.id===id);if(!c)return;$('washCustomer').value=c.id;$('washCustomerSearch').value=c.name||c.phone||c.plate||c.car;$('washCustomerResults').classList.remove('open');const details=[c.phone,c.plate,c.car].filter(Boolean).join(' · ');$('selectedWashCustomer').innerHTML=`<span><b>${statusHtml(c)} ${escapeHtml(c.name||'Χωρίς όνομα')}</b>${details?`<br><span class="muted">${escapeHtml(details)}</span>`:''}</span><button type="button" onclick="clearWashCustomer()">×</button>`;$('selectedWashCustomer').classList.add('show');const st=customerStatus(c);$('washCustomerStatus').innerHTML=`<div class="notice">${statusHtml(c,true)} · Τελευταία επίσκεψη: ${customerTotals(c).last?new Date(customerTotals(c).last).toLocaleDateString('el-GR'):'καμία'}</div>`;renderWashOffer(c)}
+function clearWashCustomer(){$('washCustomer').value='';$('washCustomerSearch').value='';$('selectedWashCustomer').classList.remove('show');$('washCustomerStatus').innerHTML='';$('washOfferOptions').innerHTML=''}
+function renderWashOffer(c){const o=ensureOffer(c),count=offerCount(c),ready=o.active&&count>=10&&!o.giftRedeemed&&!offerIsExpired(c);$('washOfferOptions').innerHTML=!o.active?'':`<div class="offer-wash-option"><b>🎁 Κάρτα προσφοράς ${count}/10</b>${ready?'<div class="offer-ready">Το πλύσιμο μπορεί να καταχωρηθεί ως ΔΩΡΟ.</div>':`<label class="checkbox-row"><input id="washCountsOffer" type="checkbox"> Να μετρήσει στην κάρτα προσφοράς</label>`}${ready?'<label class="checkbox-row"><input id="washRedeemGift" type="checkbox" onchange="toggleGiftWash()"> Εξαργύρωση δωρεάν πλυσίματος</label>':''}</div>`}
+function toggleGiftWash(){if($('washRedeemGift')?.checked){$('washCollection').value=0}}
+function saveWash(){
+ if($('washCustomerSearch').value.trim()&&!$('washCustomer').value){alert('Διάλεξε τον πελάτη από τα αποτελέσματα.');return}const c=db.customers.find(x=>x.id===$('washCustomer').value),s=db.services.find(x=>x.id===$('washService').value);let receipt=+$('washReceipt').value||0,collection=+$('washCollection').value||0,p=$('washPayment').value,debt=p==='debt'?collection:p==='partial'?Math.max(0,collection-(+$('washCollection').value||0)):0;const gift=!!$('washRedeemGift')?.checked;if(gift)collection=0;
+ const w={id:crypto.randomUUID(),date:new Date().toISOString(),customerId:c?.id||'',customer:c?.name||'',plate:c?.plate||'',service:s?.name||'Άλλη',notes:$('washNotes').value,receiptAmount:receipt,collectionAmount:collection,price:receipt,paid:collection,debt,vatRate:+$('washVat').value,paymentMethod:$('washPaymentMethod').value,offerCounted:false,offerGift:gift};db.washes.unshift(w);
+ if(c){const o=ensureOffer(c);if(gift&&offerCount(c)>=10){o.giftRedeemed=true}else if($('washCountsOffer')?.checked&&o.active&&!offerIsExpired(c)){const d=day();if(o.stamps.some(x=>offerMonthKey(x)===offerMonthKey(d)))alert('Το πλύσιμο καταχωρήθηκε στο ιστορικό, αλλά δεν μέτρησε στην κάρτα γιατί υπάρχει ήδη πλύσιμο αυτόν τον μήνα.');else if(offerCount(c)<10){o.stamps.push(d);w.offerCounted=true;if(offerCount(c)===10)setTimeout(()=>alert('🎉 Συμπληρώθηκαν 10 πλυσίματα. Το επόμενο είναι ΔΩΡΟ!'),100)}}}
+ save();washDlg.close();$('washNotes').value='';clearWashCustomer()
+}
+function renderCustomerDetails(c){const t=customerTotals(c),st=customerStatus(c),ws=customerWashes(c).sort((a,b)=>b.date.localeCompare(a.date));$('custStatusBox').innerHTML=`<div class="notice">${statusHtml(c,true)}</div>`;$('custStatsBox').innerHTML=`<div class="customer-finance"><div><span class="kpi-title">Σύνολο εισπράξεων</span><b>${eur(t.collections)}</b></div><div><span class="kpi-title">Σύνολο αποδείξεων</span><b>${eur(t.receipts)}</b></div><div><span class="kpi-title">Επισκέψεις</span><b>${t.visits}</b></div><div><span class="kpi-title">Μέση είσπραξη</span><b>${eur(t.visits?t.collections/t.visits:0)}</b></div></div>`;
+ $('custRemindersBox').innerHTML=`<div class="offer-box"><div class="offer-head"><b>🔔 Υπενθυμίσεις</b><button class="secondary" onclick="addReminder('${c.id}')">+ Νέα</button></div>${(c.reminders||[]).filter(r=>!r.done).length?(c.reminders||[]).filter(r=>!r.done).sort((a,b)=>a.date.localeCompare(b.date)).map(r=>`<div class="history-row ${r.date<=day()?'reminder-due':'reminder-upcoming'}"><b>${new Date(r.date+'T12:00').toLocaleDateString('el-GR')}</b> — ${escapeHtml(r.text)} <button class="link" onclick="completeReminder('${c.id}','${r.id}')">✓</button></div>`).join(''):'Καμία ενεργή υπενθύμιση.'}</div>`;
+ $('custHistoryBox').innerHTML=`<div class="offer-box"><b>📖 Ιστορικό επισκέψεων</b>${ws.length?ws.map(w=>`<div class="history-row"><b>${new Date(w.date).toLocaleString('el-GR')}</b> — ${escapeHtml(w.service)}${w.offerGift?' 🎁':''}<br>${escapeHtml(w.notes||'')}<br><span class="muted">Απόδειξη ${eur(w.receiptAmount)} · Είσπραξη ${eur(w.collectionAmount)} · ${escapeHtml(w.paymentMethod||'')}</span>${w.offerCounted?'<br><span class="pill amber">Μέτρησε στην κάρτα</span>':''}</div>`).join(''):'<div class="muted">Δεν υπάρχουν επισκέψεις.</div>'}</div>`}
+function openCustomer(){['custId','custName','custPhone','custPlate','custCar','custNotes','custOfferStart'].forEach(i=>$(i).value='');$('custOfferActive').checked=false;$('custOfferFields').style.display='none';$('custOfferEditor').innerHTML='';$('custStatusBox').innerHTML='';$('custStatsBox').innerHTML='';$('custRemindersBox').innerHTML='';$('custHistoryBox').innerHTML='';customerDlg.showModal()}
+function editCustomer(id){const c=db.customers.find(x=>x.id===id),o=ensureOffer(c);$('custId').value=c.id;$('custName').value=c.name;$('custPhone').value=c.phone;$('custPlate').value=c.plate;$('custCar').value=c.car;$('custNotes').value=c.notes||'';$('custOfferActive').checked=!!o.active;$('custOfferStart').value=o.startDate||day();toggleCustomerOfferFields();renderCustomerDetails(c);customerDlg.showModal();renderCustomerOfferEditor()}
+function saveCustomer(){let id=$('custId').value,c=id?db.customers.find(x=>x.id===id):{id:crypto.randomUUID(),reminders:[]};if(!id)db.customers.push(c);const o=ensureOffer(c);o.active=$('custOfferActive').checked;if(o.active)o.startDate=$('custOfferStart').value||o.startDate||day();Object.assign(c,{name:$('custName').value,phone:$('custPhone').value,plate:$('custPlate').value.toUpperCase(),car:$('custCar').value,notes:$('custNotes').value});save();customerDlg.close()}
+function addReminder(cid){const c=db.customers.find(x=>x.id===cid);if(!c)return;const date=prompt('Ημερομηνία υπενθύμισης (ΕΕΕΕ-ΜΜ-ΗΗ):',day());if(!date)return;const text=prompt('Τι θέλεις να θυμηθείς;');if(!text)return;c.reminders.push({id:crypto.randomUUID(),date,text,done:false});save();renderCustomerDetails(c)}
+function completeReminder(cid,rid){const c=db.customers.find(x=>x.id===cid),r=c?.reminders.find(x=>x.id===rid);if(r)r.done=true;save();if(customerDlg.open&&c)renderCustomerDetails(c)}
+function renderServices(){$('servicesList').innerHTML=db.services.map(s=>`<div class="list-item"><b>${s.favorite?'⭐ ':''}${escapeHtml(s.name)}</b><span style="float:right">${eur(s.price)}</span><br><span class="muted">ΦΠΑ ${s.vat??24}%</span><br><button class="link" onclick="editService('${s.id}')">Επεξεργασία</button></div>`).join('')}
+function openService(){['srvId','srvName','srvPrice'].forEach(i=>$(i).value='');$('srvVat').value='24';$('srvFav').checked=false;serviceDlg.showModal()}
+function saveService(){let id=$('srvId').value,s=id?db.services.find(x=>x.id===id):{id:crypto.randomUUID(),history:[]};if(!id)db.services.push(s);let np=+$('srvPrice').value||0;if(s.price!==np)s.history.push({date:new Date().toISOString(),price:np});Object.assign(s,{name:$('srvName').value||'Χωρίς όνομα',price:np,vat:+$('srvVat').value,favorite:$('srvFav').checked});save();serviceDlg.close()}
+function editService(id){let s=db.services.find(x=>x.id===id);$('srvId').value=s.id;$('srvName').value=s.name;$('srvPrice').value=s.price;$('srvVat').value=String(s.vat??24);$('srvFav').checked=s.favorite;serviceDlg.showModal()}
+function renderMore(){const m=day().slice(0,7),a=db.washes.filter(w=>dateOnly(w.date).slice(0,7)===m);$('monthRevenue').textContent=eur(a.reduce((s,w)=>s+(+w.collectionAmount||0),0));$('monthCars').textContent=a.length;const allCol=db.washes.reduce((s,w)=>s+(+w.collectionAmount||0),0),allExp=db.expenses.reduce((s,e)=>s+(+e.amount||0),0);$('businessStats').innerHTML=`<div class="customer-finance"><div><span class="kpi-title">Συνολικές εισπράξεις</span><b>${eur(allCol)}</b></div><div><span class="kpi-title">Συνολικά έξοδα</span><b>${eur(allExp)}</b></div><div><span class="kpi-title">Διαφορά</span><b>${eur(allCol-allExp)}</b></div><div><span class="kpi-title">Σύνολο επισκέψεων</span><b>${db.washes.length}</b></div></div>`;const top=[...db.customers].sort((x,y)=>customerTotals(y).collections-customerTotals(x).collections).slice(0,10);$('topCustomers').innerHTML=top.length?top.map((c,i)=>`<div class="list-item"><b>${i+1}. ${statusHtml(c)} ${escapeHtml(c.name)}</b><span style="float:right">${eur(customerTotals(c).collections)}</span></div>`).join(''):'Χωρίς δεδομένα.';const counts={};db.washes.forEach(w=>counts[w.service]=(counts[w.service]||0)+1);$('topServices').innerHTML=Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,10).map(([n,v])=>`<div class="list-item"><b>${escapeHtml(n)}</b><span style="float:right">${v}</span></div>`).join('')||'Χωρίς δεδομένα.';let d=db.washes.filter(w=>+w.debt>0);$('debts').innerHTML=d.length?d.map(w=>`<div class="list-item"><b>${escapeHtml(w.customer)}</b><span class="pill red" style="float:right">${eur(w.debt)}</span><br><button class="link" onclick="settle('${w.id}')">Εξόφληση</button></div>`).join(''):'Καμία οφειλή.';$('googleClientId').value=localStorage.getItem(GKEY)||DEFAULT_GOOGLE_CLIENT_ID;$('vipLimit').value=db.settings.vipLimit||500}
+function openExpense(){$('expId').value='';$('expDate').value=day();$('expDescription').value='';$('expAmount').value='';$('expVat').value='24';$('expInvoice').checked=true;$('expInvoiceNumber').value='';$('expNotes').value='';expenseDlg.showModal()}
+function saveExpense(){if(!$('expDescription').value.trim()||!(+$('expAmount').value>=0)){alert('Συμπλήρωσε περιγραφή και ποσό.');return}let id=$('expId').value,e=id?db.expenses.find(x=>x.id===id):{id:crypto.randomUUID()};if(!id)db.expenses.unshift(e);Object.assign(e,{date:$('expDate').value||day(),description:$('expDescription').value,category:$('expCategory').value,amount:+$('expAmount').value||0,vatRate:+$('expVat').value,invoice:$('expInvoice').checked,invoiceNumber:$('expInvoiceNumber').value,notes:$('expNotes').value});save();expenseDlg.close();renderExpenses()}
+function editExpense(id){const e=db.expenses.find(x=>x.id===id);if(!e)return;$('expId').value=e.id;$('expDate').value=e.date;$('expDescription').value=e.description;$('expCategory').value=e.category;$('expAmount').value=e.amount;$('expVat').value=String(e.vatRate);$('expInvoice').checked=!!e.invoice;$('expInvoiceNumber').value=e.invoiceNumber||'';$('expNotes').value=e.notes||'';expenseDlg.showModal()}
+function deleteExpense(id){if(confirm('Διαγραφή εξόδου;')){db.expenses=db.expenses.filter(e=>e.id!==id);save();renderExpenses()}}
+function renderExpenses(){const f=$('expenseFrom').value,t=$('expenseTo').value,a=db.expenses.filter(e=>inRange(e.date,f,t));$('expensesList').innerHTML=`<div class="stat">${eur(a.reduce((s,e)=>s+e.amount,0))}</div><div class="muted">Σύνολο επιλεγμένης περιόδου</div>${a.length?a.map(e=>`<div class="list-item"><b>${escapeHtml(e.description)}</b><span class="amount-negative" style="float:right">-${eur(e.amount)}</span><br><span class="muted">${new Date(e.date+'T12:00').toLocaleDateString('el-GR')} · ${escapeHtml(e.category)} · ΦΠΑ ${e.vatRate}% · ${e.invoice?'Τιμολόγιο':'Χωρίς τιμολόγιο'}</span><br><button class="link" onclick="editExpense('${e.id}')">Επεξεργασία</button> <button class="link" onclick="deleteExpense('${e.id}')">Διαγραφή</button></div>`).join(''):'Δεν υπάρχουν έξοδα.'}`}
+function renderFinance(){const f=$('financeFrom').value,t=$('financeTo').value,ws=db.washes.filter(w=>inRange(w.date,f,t)),es=db.expenses.filter(e=>inRange(e.date,f,t));const receipts=ws.reduce((a,w)=>a+(+w.receiptAmount||0),0),collections=ws.reduce((a,w)=>a+(+w.collectionAmount||0),0),expenses=es.reduce((a,e)=>a+(+e.amount||0),0),out24=ws.filter(w=>+w.vatRate===24).reduce((a,w)=>a+vatPart(w.receiptAmount,24),0),out13=ws.filter(w=>+w.vatRate===13).reduce((a,w)=>a+vatPart(w.receiptAmount,13),0),in24=es.filter(e=>e.invoice&&+e.vatRate===24).reduce((a,e)=>a+vatPart(e.amount,24),0),in13=es.filter(e=>e.invoice&&+e.vatRate===13).reduce((a,e)=>a+vatPart(e.amount,13),0),pay=out24+out13-in24-in13;$('financeStats').innerHTML=`<div class="customer-finance"><div><span class="kpi-title">Εισπράξεις</span><b>${eur(collections)}</b></div><div><span class="kpi-title">Αποδείξεις</span><b>${eur(receipts)}</b></div><div><span class="kpi-title">Έξοδα</span><b>${eur(expenses)}</b></div><div><span class="kpi-title">Εισπράξεις - έξοδα</span><b>${eur(collections-expenses)}</b></div></div>`;$('vatStats').innerHTML=`<div class="simple-table table-scroll"><table><tr><th></th><th>24%</th><th>13%</th><th>Σύνολο</th></tr><tr><td>ΦΠΑ εσόδων</td><td>${eur(out24)}</td><td>${eur(out13)}</td><td>${eur(out24+out13)}</td></tr><tr><td>ΦΠΑ εξόδων</td><td>${eur(in24)}</td><td>${eur(in13)}</td><td>${eur(in24+in13)}</td></tr></table></div><div class="card ${pay>=0?'warning-card':'success-card'}" style="margin-top:12px"><div class="label">Εκτιμώμενος ΦΠΑ ${pay>=0?'προς πληρωμή':'πιστωτικός'}</div><div class="stat">${eur(Math.abs(pay))}</div></div>`}
+function saveBusinessSettings(){db.settings.vipLimit=+$('vipLimit').value||500;save();alert('Αποθηκεύτηκε.')}
+function searchApptCustomers(){const q=normalizeSearch($('apptCustomerSearch').value),box=$('apptCustomerResults');const a=db.customers.filter(c=>normalizeSearch(`${c.name} ${c.phone} ${c.plate} ${c.car}`).includes(q)).slice(0,30);box.innerHTML=a.map(c=>`<button type="button" class="customer-result" onclick="selectApptCustomer('${c.id}')"><b>${statusHtml(c)} ${escapeHtml(c.name)}</b><small>${escapeHtml([c.phone,c.plate,c.car].filter(Boolean).join(' · '))}</small></button>`).join('')||'<div class="customer-result"><small>Δεν βρέθηκε πελάτης.</small></div>';box.classList.add('open')}
+function selectApptCustomer(id){const c=db.customers.find(x=>x.id===id);if(!c)return;$('apptCustomer').value=id;$('apptCustomerSearch').value=c.name;$('apptCustomerResults').classList.remove('open');$('apptSelectedCustomer').innerHTML=`<span><b>${statusHtml(c)} ${escapeHtml(c.name)}</b><br><span class="muted">${escapeHtml([c.plate,c.car].filter(Boolean).join(' · '))}</span></span>`;$('apptSelectedCustomer').classList.add('show');if(!$('apptTitle').value)$('apptTitle').value=[c.name,c.car,c.plate].filter(Boolean).join(' - ')}
+const oldOpenAppointment=openAppointment;openAppointment=function(){oldOpenAppointment();$('apptCustomer').value='';$('apptCustomerSearch').value='';$('apptSelectedCustomer').classList.remove('show')}
 
 if("serviceWorker"in navigator)navigator.serviceWorker.register("service-worker.js").catch(()=>{});
 render();renderCalendar();
