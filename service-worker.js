@@ -1,4 +1,4 @@
-const CACHE = 'ultimate-car-wash-v15-login-final';
+const CACHE = 'ultimate-car-wash-v16-full-dark-fixed';
 const APP_SHELL = ['./','./index.html','./manifest.json','./icon.svg','./icon-192.png','./icon-512.png','./apple-touch-icon.png'];
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(APP_SHELL)).then(() => self.skipWaiting()));
