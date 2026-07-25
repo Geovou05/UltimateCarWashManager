@@ -1,1 +1,13 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="110" fill="#0b0b0d"/><circle cx="256" cy="256" r="170" fill="white"/><text x="256" y="315" text-anchor="middle" font-family="Arial" font-size="210" font-weight="900" fill="#0b0b0d">U</text></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+ <defs>
+  <linearGradient id="b" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#071525"/><stop offset="1" stop-color="#02070d"/></linearGradient>
+  <linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#56c8ff"/><stop offset="1" stop-color="#168cff"/></linearGradient>
+ </defs>
+ <rect width="512" height="512" rx="112" fill="url(#b)"/>
+ <path d="M92 338h328l-31-98c-8-26-32-44-59-44H182c-27 0-51 18-59 44z" fill="none" stroke="url(#g)" stroke-width="28" stroke-linejoin="round"/>
+ <path d="M135 286h242" stroke="#fff" stroke-width="24" stroke-linecap="round" opacity=".95"/>
+ <circle cx="161" cy="349" r="29" fill="#fff"/><circle cx="351" cy="349" r="29" fill="#fff"/>
+ <path d="M256 67c41 57 66 88 66 126a66 66 0 1 1-132 0c0-38 25-69 66-126z" fill="url(#g)" opacity=".95"/>
+ <path d="M225 198c5 23 23 39 47 42" fill="none" stroke="#fff" stroke-width="13" stroke-linecap="round" opacity=".9"/>
+ <text x="256" y="444" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="48" font-weight="900" fill="#fff" letter-spacing="3">ULTIMATE</text>
+</svg>

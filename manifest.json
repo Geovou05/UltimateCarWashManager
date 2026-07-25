@@ -1,16 +1,15 @@
 {
   "name": "Ultimate Car Wash Manager",
-  "short_name": "Ultimate Wash",
+  "short_name": "Ultimate Car Wash",
+  "description": "Διαχείριση πελατών, πλυσίματος, οικονομικών, εξόδων, ΦΠΑ και ημερήσιων Ζ.",
+  "lang": "el-GR",
   "start_url": "./index.html",
+  "scope": "./",
   "display": "standalone",
-  "background_color": "#0b0b0d",
-  "theme_color": "#0b0b0d",
+  "background_color": "#050b13",
+  "theme_color": "#06111f",
   "icons": [
-    {
-      "src": "icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
-    }
+    {"src":"icon-192.png","sizes":"192x192","type":"image/png","purpose":"any maskable"},
+    {"src":"icon-512.png","sizes":"512x512","type":"image/png","purpose":"any maskable"}
   ]
 }
