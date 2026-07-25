@@ -7,7 +7,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon.svg">
 <title>Ultimate Car Wash Manager</title>
-<!-- Ultimate Car Wash Manager v7 - robust Calendar + Tasks sync -->
+<!-- Ultimate Car Wash Manager v8 - customer search + Google error details -->
 <style>
 :root{--bg:#f4f5f7;--card:#fff;--ink:#111318;--muted:#6b7280;--line:#e5e7eb;--dark:#0b0b0d;--green:#16a34a;--red:#dc2626;--amber:#d97706}
 *{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--ink)}
@@ -44,6 +44,19 @@ dialog{border:0;border-radius:20px;width:calc(100% - 22px);max-width:620px;paddi
 .day-header h3{margin:0}
 .calendar-event{border-left:4px solid #111;padding-left:10px}
 .event-time{font-weight:800;margin-right:5px}
+
+
+.customer-picker{position:relative;margin-bottom:10px}
+.customer-results{display:none;position:absolute;left:0;right:0;top:100%;z-index:100;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 10px 28px #0002;max-height:260px;overflow-y:auto;margin-top:3px}
+.customer-results.open{display:block}
+.customer-result{width:100%;border-radius:0;background:#fff;color:#111;text-align:left;padding:11px 12px;border-bottom:1px solid var(--line);font-weight:500}
+.customer-result:first-child{border-radius:12px 12px 0 0}
+.customer-result:last-child{border-bottom:0;border-radius:0 0 12px 12px}
+.customer-result b{display:block}
+.customer-result small{display:block;color:var(--muted);margin-top:3px;font-weight:400}
+.selected-customer{display:none;padding:10px 11px;border-radius:11px;background:#ecfdf5;border:1px solid #bbf7d0;margin:-2px 0 10px;font-size:13px}
+.selected-customer.show{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.selected-customer button{background:none;color:#111;padding:3px 6px;font-size:18px}
 
 </style>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -127,7 +140,13 @@ dialog{border:0;border-radius:20px;width:calc(100% - 22px);max-width:620px;paddi
 </nav>
 
 <dialog id="washDlg"><div class="dlg"><div class="dlghead"><h3>Νέο πλύσιμο</h3><button class="link" onclick="washDlg.close()">✕</button></div>
-<select id="washCustomer"></select><div class="services" id="favServices"></div><select id="washService"></select>
+<div class="customer-picker">
+<input id="washCustomerSearch" autocomplete="off" placeholder="Αναζήτηση πελάτη: όνομα, τηλέφωνο, πινακίδα ή όχημα" oninput="searchWashCustomers()" onfocus="searchWashCustomers()">
+<input id="washCustomer" type="hidden">
+<div id="washCustomerResults" class="customer-results"></div>
+</div>
+<div id="selectedWashCustomer" class="selected-customer"></div>
+<div class="services" id="favServices"></div><select id="washService"></select>
 <input id="washPrice" type="number" step="0.01" placeholder="Τιμή">
 <select id="washPayment"><option value="paid">Πληρώθηκε</option><option value="partial">Μερική πληρωμή</option><option value="debt">Οφειλή</option></select>
 <input id="washPaid" type="number" step="0.01" placeholder="Ποσό που πληρώθηκε (αν είναι μερική)">
@@ -172,10 +191,97 @@ function render(){
 function renderCustomers(){const q=($("search").value||"").toLowerCase();let a=db.customers.filter(c=>(c.name+" "+c.phone+" "+c.plate+" "+c.car).toLowerCase().includes(q));$("customersList").innerHTML=a.length?a.map(c=>`<div class="list-item"><b>${c.name||"Χωρίς όνομα"}</b><br>${c.plate||""} ${c.car||""}<br><span class="muted">${c.phone||""}</span><br><button class="link" onclick="editCustomer('${c.id}')">Επεξεργασία</button></div>`).join(""):"Δεν υπάρχουν πελάτες."}
 function renderServices(){$("servicesList").innerHTML=db.services.map(s=>`<div class="list-item"><b>${s.favorite?"⭐ ":""}${s.name}</b><span style="float:right">${eur(s.price)}</span><br><button class="link" onclick="editService('${s.id}')">Επεξεργασία</button></div>`).join("")}
 function renderMore(){const m=new Date().toISOString().slice(0,7),a=db.washes.filter(w=>w.date.slice(0,7)===m);$("monthRevenue").textContent=eur(a.reduce((s,w)=>s+w.paid,0));$("monthCars").textContent=a.length;let d=db.washes.filter(w=>w.debt>0);$("debts").innerHTML=d.length?d.map(w=>`<div class="list-item"><b>${w.customer}</b> ${w.plate}<span class="pill red" style="float:right">${eur(w.debt)}</span><br><button class="link" onclick="settle('${w.id}')">Εξόφληση</button></div>`).join(""):"Καμία οφειλή."; $("googleClientId").value=localStorage.getItem(GKEY)||""}
-function fillWash(){$("washCustomer").innerHTML='<option value="">Χωρίς πελάτη</option>'+db.customers.map(c=>`<option value="${c.id}">${c.name} — ${c.plate||""}</option>`).join("");$("washService").innerHTML=db.services.map(s=>`<option value="${s.id}">${s.name} — ${eur(s.price)}</option>`).join("");$("favServices").innerHTML=db.services.filter(s=>s.favorite).map(s=>`<button class="service" onclick="pickSrv('${s.id}')">${s.name}<br><b>${eur(s.price)}</b></button>`).join("");if(db.services[0])pickSrv(db.services[0].id)}
-function openWash(){fillWash();washDlg.showModal()} function pickSrv(id){$("washService").value=id;let s=db.services.find(x=>x.id===id);if(s)$("washPrice").value=s.price}
+function fillWash(){
+  $("washCustomer").value="";
+  $("washCustomerSearch").value="";
+  $("washCustomerResults").innerHTML="";
+  $("washCustomerResults").classList.remove("open");
+  $("selectedWashCustomer").classList.remove("show");
+  $("selectedWashCustomer").innerHTML="";
+
+  $("washService").innerHTML=db.services.map(s=>`<option value="${s.id}">${escapeHtml(s.name)} — ${eur(s.price)}</option>`).join("");
+  $("favServices").innerHTML=db.services.filter(s=>s.favorite).map(s=>`<button class="service" type="button" onclick="pickSrv('${s.id}')">${escapeHtml(s.name)}<br><b>${eur(s.price)}</b></button>`).join("");
+  if(db.services[0]) pickSrv(db.services[0].id);
+}
+
+function normalizeSearch(v){
+  return String(v||"")
+    .toLocaleLowerCase("el-GR")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g,"")
+    .replace(/\s+/g," ")
+    .trim();
+}
+
+function searchWashCustomers(){
+  const q=normalizeSearch($("washCustomerSearch").value);
+  const box=$("washCustomerResults");
+
+  if(!q){
+    box.innerHTML='<div class="customer-result"><small>Γράψε όνομα, τηλέφωνο, πινακίδα ή όχημα.</small></div>';
+    box.classList.add("open");
+    return;
+  }
+
+  const results=db.customers
+    .filter(c=>normalizeSearch(`${c.name||""} ${c.phone||""} ${c.plate||""} ${c.car||""}`).includes(q))
+    .slice(0,30);
+
+  box.innerHTML=results.length
+    ?results.map(c=>`<button type="button" class="customer-result" onclick="selectWashCustomer('${c.id}')">
+        <b>${escapeHtml(c.name||"Χωρίς όνομα")}</b>
+        <small>${escapeHtml([c.phone,c.plate,c.car].filter(Boolean).join(" · "))}</small>
+      </button>`).join("")
+    :'<div class="customer-result"><small>Δεν βρέθηκε πελάτης.</small></div>';
+
+  box.classList.add("open");
+}
+
+function selectWashCustomer(id){
+  const c=db.customers.find(x=>x.id===id);
+  if(!c) return;
+
+  $("washCustomer").value=c.id;
+  $("washCustomerSearch").value=c.name||c.phone||c.plate||c.car||"Επιλεγμένος πελάτης";
+  $("washCustomerResults").classList.remove("open");
+
+  const details=[c.phone,c.plate,c.car].filter(Boolean).join(" · ");
+  $("selectedWashCustomer").innerHTML=`
+    <span><b>${escapeHtml(c.name||"Χωρίς όνομα")}</b>${details?`<br><span class="muted">${escapeHtml(details)}</span>`:""}</span>
+    <button type="button" aria-label="Αφαίρεση πελάτη" onclick="clearWashCustomer()">×</button>`;
+  $("selectedWashCustomer").classList.add("show");
+}
+
+function clearWashCustomer(){
+  $("washCustomer").value="";
+  $("washCustomerSearch").value="";
+  $("selectedWashCustomer").classList.remove("show");
+  $("selectedWashCustomer").innerHTML="";
+  $("washCustomerSearch").focus();
+  searchWashCustomers();
+}
+
+function openWash(){
+  fillWash();
+  washDlg.showModal();
+  setTimeout(()=>$("washCustomerSearch").focus(),100);
+}
+
+document.addEventListener("click",e=>{
+  const picker=e.target.closest(".customer-picker");
+  if(!picker && $("washCustomerResults")){
+    $("washCustomerResults").classList.remove("open");
+  }
+});
+
+function pickSrv(id){$("washService").value=id;let s=db.services.find(x=>x.id===id);if(s)$("washPrice").value=s.price}
 $("washService").addEventListener("change",()=>pickSrv($("washService").value));
-function saveWash(){let c=db.customers.find(x=>x.id===$("washCustomer").value),s=db.services.find(x=>x.id===$("washService").value),price=+$("washPrice").value||0,p=$("washPayment").value,paid=price,debt=0;if(p==="debt"){paid=0;debt=price}if(p==="partial"){paid=+$("washPaid").value||0;debt=Math.max(0,price-paid)}db.washes.unshift({id:crypto.randomUUID(),date:new Date().toISOString(),customer:c?.name||"",plate:c?.plate||"",service:s?.name||"Άλλη",price,paid,debt});save();washDlg.close()}
+function saveWash(){
+  if($("washCustomerSearch").value.trim() && !$("washCustomer").value){
+    alert("Διάλεξε τον πελάτη από τα αποτελέσματα αναζήτησης ή άφησε το πεδίο κενό για πλύσιμο χωρίς πελάτη.");
+    return;
+  }
+  let c=db.customers.find(x=>x.id===$("washCustomer").value),s=db.services.find(x=>x.id===$("washService").value),price=+$("washPrice").value||0,p=$("washPayment").value,paid=price,debt=0;if(p==="debt"){paid=0;debt=price}if(p==="partial"){paid=+$("washPaid").value||0;debt=Math.max(0,price-paid)}db.washes.unshift({id:crypto.randomUUID(),date:new Date().toISOString(),customer:c?.name||"",plate:c?.plate||"",service:s?.name||"Άλλη",price,paid,debt});save();washDlg.close()}
 function undoWash(id){if(confirm("Αναίρεση καταχώρησης;")){db.washes=db.washes.filter(x=>x.id!==id);save()}} function settle(id){let w=db.washes.find(x=>x.id===id);if(w&&confirm("Καταχώρηση εξόφλησης;")){w.paid+=w.debt;w.debt=0;save()}}
 function openCustomer(){["custId","custName","custPhone","custPlate","custCar","custNotes"].forEach(i=>$(i).value="");customerDlg.showModal()}
 function saveCustomer(){let id=$("custId").value,c=id?db.customers.find(x=>x.id===id):{id:crypto.randomUUID()};if(!id)db.customers.push(c);Object.assign(c,{name:$("custName").value,phone:$("custPhone").value,plate:$("custPlate").value.toUpperCase(),car:$("custCar").value,notes:$("custNotes").value});save();customerDlg.close()}
@@ -525,7 +631,79 @@ function openAppointment(){
   $("apptEnd").value=toLocalInputValue(end);
   apptDlg.showModal();
 }
-async function createCalendarEvent(){let st=$("apptStart").value,en=$("apptEnd").value;if(!st||!en){alert("Βάλε ώρα έναρξης και λήξης.");return}let body={summary:$("apptTitle").value||"Ραντεβού Ultimate Car Wash",description:$("apptNotes").value||"",start:{dateTime:new Date(st).toISOString(),timeZone:"Europe/Athens"},end:{dateTime:new Date(en).toISOString(),timeZone:"Europe/Athens"}};try{await gfetch("https://www.googleapis.com/calendar/v3/calendars/primary/events",{method:"POST",body:JSON.stringify(body)});apptDlg.close();alert("✅ Το ραντεβού μπήκε στο Google Calendar.");calendarCursor=new Date(new Date(st).getFullYear(),new Date(st).getMonth(),1);selectedCalendarDate=new Date(new Date(st).getFullYear(),new Date(st).getMonth(),new Date(st).getDate());loadCalendar()}catch(e){alert("Δεν αποθηκεύτηκε το ραντεβού.")}}
+async function createCalendarEvent(){
+  const st=$("apptStart").value;
+  const en=$("apptEnd").value;
+
+  if(!st||!en){
+    alert("Βάλε ώρα έναρξης και λήξης.");
+    return;
+  }
+
+  const startDate=new Date(st);
+  const endDate=new Date(en);
+
+  if(isNaN(startDate)||isNaN(endDate)){
+    alert("Η ημερομηνία ή η ώρα δεν είναι σωστή.");
+    return;
+  }
+
+  if(endDate<=startDate){
+    alert("Η ώρα λήξης πρέπει να είναι μετά την ώρα έναρξης.");
+    return;
+  }
+
+  const body={
+    summary:$("apptTitle").value||"Ραντεβού Ultimate Car Wash",
+    description:$("apptNotes").value||"",
+    start:{dateTime:startDate.toISOString(),timeZone:"Europe/Athens"},
+    end:{dateTime:endDate.toISOString(),timeZone:"Europe/Athens"}
+  };
+
+  try{
+    await gfetch(
+      "https://www.googleapis.com/calendar/v3/calendars/primary/events",
+      {method:"POST",body:JSON.stringify(body)}
+    );
+
+    apptDlg.close();
+    alert("✅ Το ραντεβού μπήκε στο Google Calendar.");
+
+    calendarCursor=new Date(startDate.getFullYear(),startDate.getMonth(),1);
+    selectedCalendarDate=new Date(startDate.getFullYear(),startDate.getMonth(),startDate.getDate());
+    loadCalendar();
+
+  }catch(e){
+    console.error("Create event error:",e);
+
+    let message="Δεν αποθηκεύτηκε το ραντεβού.";
+
+    if(e.status===401){
+      message+="\n\nΗ σύνδεση Google έληξε. Πάτησε Επανασύνδεση Google και δοκίμασε ξανά.";
+    }else if(e.status===403){
+      message+="\n\nGoogle 403: Δεν υπάρχει άδεια εγγραφής ή το Google Calendar API δεν είναι ενεργό στο σωστό project.";
+    }else if(e.status===400){
+      message+="\n\nGoogle 400: Η Google απέρριψε τα στοιχεία του ραντεβού.";
+    }
+
+    if(e.detail){
+      try{
+        const parsed=JSON.parse(e.detail);
+        const apiMessage=parsed?.error?.message;
+        const reason=parsed?.error?.errors?.[0]?.reason;
+        if(apiMessage) message+="\n\nΜήνυμα Google: "+apiMessage;
+        if(reason) message+="\nΑιτία: "+reason;
+      }catch{
+        message+="\n\nΛεπτομέρεια: "+String(e.detail).slice(0,500);
+      }
+    }else if(e.message && !["GOOGLE_TOKEN_EXPIRED","NO_GOOGLE_TOKEN"].includes(e.message)){
+      message+="\n\nΛεπτομέρεια: "+e.message;
+    }
+
+    alert(message);
+  }
+}
+
 if("serviceWorker"in navigator)navigator.serviceWorker.register("service-worker.js").catch(()=>{});
 render();renderCalendar();
 </script>
