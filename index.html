@@ -5,9 +5,10 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0b0b0d">
 <link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icon.svg">
-<title>Ultimate Car Wash Manager</title>
-<!-- Ultimate Car Wash Manager v16 - full dark blue theme and secure local login -->
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="favicon.png">
+<title>Ultimate Hand Car Wash</title>
+<!-- Ultimate Hand Car Wash Manager v17 - branded premium edition -->
 <style>
 :root{--bg:#f4f5f7;--card:#fff;--ink:#111318;--muted:#6b7280;--line:#e5e7eb;--dark:#0b0b0d;--green:#16a34a;--red:#dc2626;--amber:#d97706}
 *{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--ink)}
@@ -122,14 +123,125 @@ dialog{background:#081321;color:#f7fbff;border:1px solid #294663}.dlg{background
 .auth-panel{background:linear-gradient(180deg,rgba(10,25,45,.98),rgba(3,10,19,.98));border-color:#2d6fb0;box-shadow:0 28px 80px #000c,0 0 45px #086fd522}
 .auth-screen{background:radial-gradient(circle at 20% 0,#123f80 0,#071a33 35%,#02060d 78%)}
 
+
+/* ===== Ultimate branded premium design v17 ===== */
+:root{
+  --brand-blue:#00a9f4;
+  --brand-blue-2:#0078d7;
+  --brand-cyan:#44d7ff;
+  --brand-black:#020407;
+  --brand-panel:#07111d;
+  --brand-panel-2:#0b1b2d;
+}
+html,body{background:#020407}
+body{
+  background:
+    radial-gradient(circle at 88% 0%,rgba(0,169,244,.16),transparent 30%),
+    linear-gradient(180deg,#020407 0%,#06111e 48%,#02060c 100%);
+  background-attachment:fixed;
+}
+body:before{
+  content:"";position:fixed;inset:0;pointer-events:none;opacity:.16;z-index:-1;
+  background-image:
+    linear-gradient(30deg,#24bfff12 12%,transparent 12.5%,transparent 87%,#24bfff12 87.5%,#24bfff12),
+    linear-gradient(150deg,#24bfff12 12%,transparent 12.5%,transparent 87%,#24bfff12 87.5%,#24bfff12),
+    linear-gradient(30deg,#24bfff12 12%,transparent 12.5%,transparent 87%,#24bfff12 87.5%,#24bfff12),
+    linear-gradient(150deg,#24bfff12 12%,transparent 12.5%,transparent 87%,#24bfff12 87.5%,#24bfff12);
+  background-size:46px 80px;
+  background-position:0 0,0 0,23px 40px,23px 40px;
+}
+header{
+  min-height:76px;padding:10px 14px;
+  background:linear-gradient(100deg,rgba(2,5,10,.98),rgba(7,24,42,.98));
+  border-bottom:1px solid #0e79b5;
+}
+.logo{width:68px;height:52px;border-radius:12px;background:#000;overflow:hidden;padding:0;box-shadow:0 0 22px #00a9f455}
+.logo img{width:100%;height:100%;object-fit:cover}
+header h1{font-size:17px;letter-spacing:.2px}
+header .sub{color:#63cfff;opacity:1;font-weight:700;letter-spacing:1.2px;text-transform:uppercase}
+.header-lock{border-color:#0e78b8;background:linear-gradient(135deg,#09223a,#0b4f7c)}
+main{padding-top:14px}
+.card{
+  position:relative;overflow:hidden;
+  background:linear-gradient(145deg,rgba(10,25,42,.98),rgba(4,12,22,.98));
+  border:1px solid rgba(25,150,217,.35);
+  border-radius:20px;
+  box-shadow:0 14px 36px #0009,inset 0 1px 0 #ffffff0a;
+}
+.card:after{
+  content:"";position:absolute;left:0;right:0;bottom:0;height:2px;
+  background:linear-gradient(90deg,transparent,#00a9f4,transparent);opacity:.55;
+}
+.card h3{letter-spacing:.2px}
+.grid>.card:nth-child(1),.grid>.card:nth-child(4){border-top:2px solid #00a9f4}
+.grid>.card:nth-child(2),.grid>.card:nth-child(3){border-top:2px solid #ffffff40}
+.stat{color:#fff;text-shadow:0 0 18px #00a9f444}
+.hero{
+  min-height:60px;font-size:18px;letter-spacing:.4px;
+  background:linear-gradient(110deg,#0075c9,#00baf7);
+  border:1px solid #62dcff;
+  box-shadow:0 12px 32px #008ed866,inset 0 1px 0 #fff5;
+}
+button,.btn{transition:transform .12s ease,filter .12s ease}
+button:active,.btn:active{transform:scale(.975);filter:brightness(1.12)}
+input,select,textarea{border-color:#1e5777;background:linear-gradient(180deg,#07121f,#050d17)}
+input:focus,select:focus,textarea:focus{outline:none;border-color:#00a9f4;box-shadow:0 0 0 3px #00a9f426}
+.tabs{background:rgba(1,5,10,.98);border-top-color:#0c6395;box-shadow:0 -12px 30px #000b}
+.tabs button{font-size:10.5px}
+.tabs .active{color:#43ccff;text-shadow:0 0 12px #00a9f488}
+.subtabs button.on{background:linear-gradient(135deg,#006fbe,#00a9f4)}
+.auth-screen{
+  background:
+    radial-gradient(circle at 50% -10%,rgba(0,174,255,.35),transparent 38%),
+    linear-gradient(180deg,#010306,#071523 55%,#02060b);
+}
+.auth-panel{
+  border:1px solid #0b8bcf;
+  background:linear-gradient(160deg,rgba(6,17,29,.98),rgba(1,6,12,.99));
+}
+.auth-brand{display:block;text-align:center}
+.auth-brand img{
+  width:100%;height:auto;max-height:150px;border-radius:14px;object-fit:contain;background:#000;
+  box-shadow:0 0 35px #00a9f444;margin-bottom:14px
+}
+.auth-brand h2{font-size:22px}.auth-brand p{color:#43c9ff;letter-spacing:1.4px;text-transform:uppercase}
+.auth-primary{background:linear-gradient(105deg,#0068b7,#00b9fa);border:1px solid #64dcff}
+.brand-splash{
+  position:fixed;inset:0;z-index:12000;display:flex;align-items:center;justify-content:center;
+  background:radial-gradient(circle at 50% 15%,#0a2d4d 0,#02070e 47%,#000 100%);
+  transition:opacity .45s ease,visibility .45s ease;
+}
+.brand-splash.hide{opacity:0;visibility:hidden}
+.brand-splash-inner{width:min(88vw,520px);text-align:center;padding:26px}
+.brand-splash img{width:100%;max-height:250px;object-fit:contain;border-radius:16px;box-shadow:0 0 60px #00a9f43d}
+.splash-line{height:4px;background:#0c2235;border-radius:999px;overflow:hidden;margin:22px auto;width:78%}
+.splash-line span{display:block;height:100%;background:linear-gradient(90deg,#0076cc,#4ae0ff);animation:splashLoad 1.15s ease forwards}
+.splash-text{font-size:14px;letter-spacing:1.8px;color:#fff;line-height:1.55}.splash-text b{color:#28c7ff}
+@keyframes splashLoad{from{width:0}to{width:100%}}
+.backup-import{display:block;text-align:center;margin-top:9px}
+.backup-card .notice{border-left:3px solid #00a9f4}
+dialog::backdrop{background:#000b;backdrop-filter:blur(5px)}
+dialog{box-shadow:0 24px 80px #000d}
+@media(min-width:700px){
+  main{max-width:900px}
+  .grid{grid-template-columns:repeat(4,1fr)}
+}
+
 </style>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body class="auth-locked">
+<div id="brandSplash" class="brand-splash">
+  <div class="brand-splash-inner">
+    <img src="ultimate-logo.jpg" alt="Ultimate Hand Car Wash">
+    <div class="splash-line"><span></span></div>
+    <div class="splash-text">Η ΦΡΟΝΤΙΔΑ ΠΟΥ ΑΞΙΖΕΙ<br><b>ΤΟ ΑΥΤΟΚΙΝΗΤΟ ΣΟΥ</b></div>
+  </div>
+</div>
 
 <div id="authScreen" class="auth-screen">
   <div class="auth-panel">
-    <div class="auth-brand"><img src="icon-192.png" alt="Ultimate Car Wash"><div><h2 id="authTitle">Ασφαλής είσοδος</h2><p>Ultimate Car Wash Manager</p></div></div>
+    <div class="auth-brand"><img src="ultimate-logo.jpg" alt="Ultimate Hand Car Wash"><div><h2 id="authTitle">Ασφαλής είσοδος</h2><p>Ultimate Hand Car Wash</p></div></div>
     <div id="setupHelp" class="notice" style="display:none;background:#0d2c58;color:#e7f1ff;border:1px solid #245b9d">Πρώτη είσοδος: όρισε το username και το προσωπικό σου εξαψήφιο PIN.</div>
     <label>Username</label><input id="authUsername" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="Username">
     <label>Εξαψήφιο PIN</label><div class="auth-pin-wrap"><input id="authPin" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="current-password" placeholder="••••••"><button type="button" class="auth-eye" onclick="togglePin('authPin',this)">👁</button></div>
@@ -141,7 +253,7 @@ dialog{background:#081321;color:#f7fbff;border:1px solid #294663}.dlg{background
   </div>
 </div>
 
-<header><div class="logo">U</div><div><h1>Ultimate Car Wash</h1><div class="sub">Manager</div></div><button class="header-lock" onclick="lockApp(false)" title="Κλείδωμα εφαρμογής">🔒 Κλείδωμα</button></header>
+<header><div class="logo"><img src="ultimate-logo.jpg" alt="Ultimate"></div><div><h1>Ultimate Hand Car Wash</h1><div class="sub">Business Manager</div></div><button class="header-lock" onclick="lockApp(false)" title="Κλείδωμα εφαρμογής">🔒 Κλείδωμα</button></header>
 <main>
 <section id="home" class="section active">
 <div class="grid">
@@ -238,7 +350,7 @@ dialog{background:#081321;color:#f7fbff;border:1px solid #294663}.dlg{background
 <div class="card"><h3>🔐 Ασφάλεια σύνδεσης</h3><div class="security-box">Η εφαρμογή προστατεύεται με username και εξαψήφιο PIN. Επιτρέπονται έως 5 λανθασμένες προσπάθειες και μετά εφαρμόζεται αναμονή 5 λεπτών.</div><button class="wide secondary" style="margin-top:10px" onclick="changeLoginCredentials()">Αλλαγή username / PIN</button><button class="wide danger" style="margin-top:8px" onclick="forgetAndLock()">Αποσύνδεση και κατάργηση απομνημόνευσης</button></div>
 <div class="card"><h3>Ρυθμίσεις επιχείρησης</h3><label>Όριο VIP (€)</label><input id="vipLimit" type="number" value="500"><button class="wide" onclick="saveBusinessSettings()">Αποθήκευση</button></div>
 <div class="card"><h3>Ρυθμίσεις Google</h3><div class="notice">Βάλε εδώ το Google OAuth Client ID της εφαρμογής. Αποθηκεύεται μόνο στη συσκευή σου.</div><input id="googleClientId" placeholder="xxxxxxxx.apps.googleusercontent.com"><button class="wide" onclick="saveGoogleSettings()">Αποθήκευση Google Client ID</button></div>
-<div class="card"><h3>Backup δεδομένων</h3><button onclick="exportData()">Εξαγωγή</button> <label class="btn secondary">Εισαγωγή<input hidden id="importFile" type="file" accept="application/json" onchange="importData(event)"></label></div>
+<div class="card backup-card"><h3>☁️ Αντίγραφο ασφαλείας</h3><div class="notice">Αποθήκευσε όλα τα δεδομένα σε αρχείο και διάλεξε «Αποθήκευση στα Αρχεία» για iCloud Drive. Για επαναφορά, διάλεξε το ίδιο αρχείο.</div><button class="wide" onclick="exportData()">⬇️ Δημιουργία backup</button><label class="btn secondary wide backup-import">⬆️ Επαναφορά backup<input hidden id="importFile" type="file" accept="application/json" onchange="importData(event)"></label><div id="backupStatus" class="muted" style="margin-top:10px"></div></div>
 </div>
 </section>
 </main>
@@ -570,8 +682,29 @@ $("custOfferStart").addEventListener("change",()=>{const c=currentEditedCustomer
 function openService(){["srvId","srvName","srvPrice"].forEach(i=>$(i).value="");$("srvFav").checked=false;serviceDlg.showModal()}
 function saveService(){let id=$("srvId").value,s=id?db.services.find(x=>x.id===id):{id:crypto.randomUUID(),history:[]};if(!id)db.services.push(s);let np=+$("srvPrice").value||0;if(s.price!==np)s.history.push({date:new Date().toISOString(),price:np});Object.assign(s,{name:$("srvName").value||"Χωρίς όνομα",price:np,favorite:$("srvFav").checked});save();serviceDlg.close()}
 function editService(id){let s=db.services.find(x=>x.id===id);$("srvId").value=s.id;$("srvName").value=s.name;$("srvPrice").value=s.price;$("srvFav").checked=s.favorite;serviceDlg.showModal()}
-function exportData(){let b=new Blob([JSON.stringify(db,null,2)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(b);a.download="ultimate_backup_"+day()+".json";a.click()}
-function importData(e){let f=e.target.files[0],r=new FileReader();r.onload=()=>{try{let x=JSON.parse(r.result);if(!x.customers||!x.services||!x.washes)throw 0;db=x;save();alert("Backup εισήχθη.")}catch{alert("Μη έγκυρο αρχείο.")}};if(f)r.readAsText(f)}
+async function exportData(){
+  const payload=JSON.stringify({version:17,exportedAt:new Date().toISOString(),data:db},null,2);
+  const filename="ultimate_backup_"+day()+".json";
+  const file=new File([payload],filename,{type:"application/json"});
+  try{
+    if(navigator.canShare&&navigator.canShare({files:[file]})){
+      await navigator.share({title:"Ultimate Hand Car Wash Backup",text:"Αντίγραφο ασφαλείας δεδομένων",files:[file]});
+      localStorage.setItem("ucwm_last_backup",new Date().toISOString());
+      updateBackupStatus();
+      return;
+    }
+  }catch(e){if(e.name==="AbortError")return}
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(file);a.download=filename;a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+  localStorage.setItem("ucwm_last_backup",new Date().toISOString());
+  updateBackupStatus();
+}
+function updateBackupStatus(){
+  const el=document.getElementById("backupStatus"),v=localStorage.getItem("ucwm_last_backup");
+  if(el)el.textContent=v?"Τελευταίο backup: "+new Date(v).toLocaleString("el-GR"):"Δεν έχει δημιουργηθεί backup ακόμη.";
+}
+function importData(e){let f=e.target.files[0],r=new FileReader();r.onload=()=>{try{let x=JSON.parse(r.result);x=x.data||x;if(!x.customers||!x.services||!x.washes)throw 0;db=x;save();localStorage.setItem("ucwm_last_backup",new Date().toISOString());updateBackupStatus();alert("Το backup επαναφέρθηκε με επιτυχία.")}catch{alert("Μη έγκυρο αρχείο.")}};if(f)r.readAsText(f)}
 function saveGoogleSettings(){
   let cid=$("googleClientId").value.trim()
     .replace(/^https?:\/\//i,"")
@@ -1077,6 +1210,8 @@ function searchApptCustomers(){const q=normalizeSearch($('apptCustomerSearch').v
 function selectApptCustomer(id){const c=db.customers.find(x=>x.id===id);if(!c)return;$('apptCustomer').value=id;$('apptCustomerSearch').value=c.name;$('apptCustomerResults').classList.remove('open');$('apptSelectedCustomer').innerHTML=`<span><b>${statusHtml(c)} ${escapeHtml(c.name)}</b><br><span class="muted">${escapeHtml([c.plate,c.car].filter(Boolean).join(' · '))}</span></span>`;$('apptSelectedCustomer').classList.add('show');if(!$('apptTitle').value)$('apptTitle').value=[c.name,c.car,c.plate].filter(Boolean).join(' - ')}
 const oldOpenAppointment=openAppointment;openAppointment=function(){oldOpenAppointment();$('apptCustomer').value='';$('apptCustomerSearch').value='';$('apptSelectedCustomer').classList.remove('show')}
 
+window.addEventListener("load",()=>setTimeout(()=>document.getElementById("brandSplash")?.classList.add("hide"),1050));
+updateBackupStatus();
 if("serviceWorker"in navigator)navigator.serviceWorker.register("service-worker.js").catch(()=>{});
 initAuth();
 </script>
