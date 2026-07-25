@@ -7,6 +7,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon.svg">
 <title>Ultimate Car Wash Manager</title>
+<!-- Ultimate Car Wash Manager v7 - robust Calendar + Tasks sync -->
 <style>
 :root{--bg:#f4f5f7;--card:#fff;--ink:#111318;--muted:#6b7280;--line:#e5e7eb;--dark:#0b0b0d;--green:#16a34a;--red:#dc2626;--amber:#d97706}
 *{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--ink)}
@@ -187,7 +188,37 @@ function importData(e){let f=e.target.files[0],r=new FileReader();r.onload=()=>{
 function saveGoogleSettings(){localStorage.setItem(GKEY,$("googleClientId").value.trim());tokenClient=null;alert("Αποθηκεύτηκε. Πάτησε Σύνδεση Google Calendar.")}
 function initTokenClient(){const cid=localStorage.getItem(GKEY);if(!cid){alert("Πρώτα βάλε το Google OAuth Client ID στις Ρυθμίσεις.");return false}if(!window.google?.accounts?.oauth2){alert("Η υπηρεσία Google δεν έχει φορτώσει ακόμη.");return false}tokenClient=google.accounts.oauth2.initTokenClient({client_id:cid,scope:"https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/tasks.readonly",callback:r=>{if(r.error){alert("Αποτυχία σύνδεσης: "+r.error);return}googleToken=r.access_token;$("googleStatus").textContent="✅ Google Calendar συνδεδεμένο";$("connectBtn").textContent="Επανασύνδεση Google";loadCalendar()}});return true}
 function connectGoogle(){if(!tokenClient&&!initTokenClient())return;tokenClient.requestAccessToken({prompt:googleToken?"":"consent"})}
-async function gfetch(url,opt={}){if(!googleToken){alert("Σύνδεσε πρώτα το Google Calendar.");throw new Error("no token")}opt.headers={...(opt.headers||{}),Authorization:"Bearer "+googleToken,"Content-Type":"application/json"};let r=await fetch(url,opt);if(r.status===401){googleToken=null;$("googleStatus").textContent="Η σύνδεση έληξε — σύνδεσε ξανά.";throw new Error("expired")}if(!r.ok)throw new Error(await r.text());return r.json()}
+async function gfetch(url,opt={}){
+  if(!googleToken) throw new Error("NO_GOOGLE_TOKEN");
+
+  const method=(opt.method||"GET").toUpperCase();
+  opt.headers={...(opt.headers||{}),Authorization:"Bearer "+googleToken};
+  if(method!=="GET" && method!=="HEAD"){
+    opt.headers["Content-Type"]="application/json";
+  }
+
+  const r=await fetch(url,opt);
+
+  if(r.status===401){
+    googleToken=null;
+    $("googleStatus").textContent="Η σύνδεση έληξε — πάτησε Επανασύνδεση Google.";
+    const err=new Error("GOOGLE_TOKEN_EXPIRED");
+    err.status=401;
+    throw err;
+  }
+
+  if(!r.ok){
+    let detail="";
+    try{detail=await r.text()}catch{}
+    const err=new Error(detail||`Google API error ${r.status}`);
+    err.status=r.status;
+    err.detail=detail;
+    throw err;
+  }
+
+  if(r.status===204) return {};
+  return r.json();
+}
 function localDateKey(d){
   const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,"0"), day=String(d.getDate()).padStart(2,"0");
   return `${y}-${m}-${day}`;
@@ -226,6 +257,8 @@ function renderCalendar(){
     const key=localDateKey(d);
     const inMonth=d.getMonth()===calendarCursor.getMonth();
     const dayEvents=calendarEvents.filter(e=>eventDateKey(e)===key);
+    const dayTasks=googleTasks.filter(t=>t.due && String(t.due).slice(0,10)===key);
+    const dayItemsCount=dayEvents.length+dayTasks.length;
     const classes=[
       "cal-day",
       inMonth?"":"outside",
@@ -233,10 +266,10 @@ function renderCalendar(){
       key===selectedKey?"selected":""
     ].filter(Boolean).join(" ");
 
-    const dots = dayEvents.slice(0,5).map(()=>'<span class="dot"></span>').join("");
+    const dots = Array.from({length:Math.min(dayItemsCount,5)},()=>'<span class="dot"></span>').join("");
     html += `<button class="${classes}" onclick="selectCalendarDate('${key}')">
       <span class="num">${d.getDate()}</span>
-      ${dayEvents.length?`<div class="dots">${dots}</div>`:""}
+      ${dayItemsCount?`<div class="dots">${dots}</div>`:""}
     </button>`;
   }
   $("calendarGrid").innerHTML=html;
@@ -253,21 +286,20 @@ function renderSelectedDay(){
   const tasks=googleTasks
     .filter(t=>{
       if(!t.due) return false;
-      const d=new Date(t.due);
-      return localDateKey(d)===key;
+      return String(t.due).slice(0,10)===key;
     })
-    .map(t=>({type:"task",data:t,sort:new Date(t.due||0)}));
+    .map(t=>({
+      type:"task",
+      data:t,
+      sort:new Date(String(t.due).slice(0,10)+"T12:00:00")
+    }));
 
   const items=[...events,...tasks].sort((a,b)=>a.sort-b.sort);
 
   $("calendarList").innerHTML=items.length?items.map(item=>{
     if(item.type==="task"){
       const t=item.data;
-      let time="Εργασία";
-      if(t.due){
-        const d=new Date(t.due);
-        if(!isNaN(d)) time=d.toLocaleTimeString("el-GR",{hour:"2-digit",minute:"2-digit"});
-      }
+      const time="Εργασία";
       return `<div class="list-item calendar-event">
         <span class="event-time">✓ ${escapeHtml(time)}</span><b>${escapeHtml(t.title||"Χωρίς τίτλο")}</b><br>
         <span class="pill">Google Tasks · ${escapeHtml(t._taskListName||"Εργασίες")}</span>
@@ -309,58 +341,116 @@ function goToday(){
 }
 async function loadCalendar(){
   renderCalendar();
+
   if(!googleToken){
     $("calendarList").textContent="Σύνδεσε το Google Calendar.";
     return;
   }
 
-  $("calendarList").textContent="Φόρτωση ραντεβού...";
+  $("calendarList").textContent="Φόρτωση...";
+  $("googleStatus").textContent="⏳ Φόρτωση Google Calendar + Εργασιών...";
+
   const {start,end}=monthRange();
 
+  let calendarOk=false;
+  let tasksOk=false;
+  let calendarMessage="";
+  let tasksMessage="";
+  let calendarsFound=0;
+
+  // GOOGLE CALENDAR
   try{
     let calendars=[], pageToken="";
+
     do{
       const url="https://www.googleapis.com/calendar/v3/users/me/calendarList?maxResults=250&showHidden=true"
         +(pageToken?"&pageToken="+encodeURIComponent(pageToken):"");
+
       const page=await gfetch(url);
       calendars.push(...(page.items||[]));
       pageToken=page.nextPageToken||"";
     }while(pageToken);
 
     calendarSources=calendars.filter(c=>!c.deleted);
-    $("googleStatus").textContent=`✅ Google Calendar συνδεδεμένο — βρέθηκαν ${calendarSources.length} ημερολόγια`;
+    calendarsFound=calendarSources.length;
+
     let allEvents=[];
 
     for(const cal of calendarSources){
-      let eventPageToken="";
-      do{
-        const url="https://www.googleapis.com/calendar/v3/calendars/"
-          +encodeURIComponent(cal.id)
-          +"/events?singleEvents=true&orderBy=startTime"
-          +"&timeMin="+encodeURIComponent(start.toISOString())
-          +"&timeMax="+encodeURIComponent(end.toISOString())
-          +"&maxResults=2500"
-          +(eventPageToken?"&pageToken="+encodeURIComponent(eventPageToken):"");
+      try{
+        let token="";
+        do{
+          const url="https://www.googleapis.com/calendar/v3/calendars/"
+            +encodeURIComponent(cal.id)
+            +"/events?singleEvents=true&orderBy=startTime"
+            +"&timeMin="+encodeURIComponent(start.toISOString())
+            +"&timeMax="+encodeURIComponent(end.toISOString())
+            +"&maxResults=2500"
+            +(token?"&pageToken="+encodeURIComponent(token):"");
 
-        const page=await gfetch(url);
-        for(const e of (page.items||[])){
-          if(e.status==="cancelled") continue;
-          allEvents.push({
-            ...e,
-            _calendarName:cal.summaryOverride||cal.summary||"Ημερολόγιο",
-            _calendarId:cal.id
-          });
-        }
-        eventPageToken=page.nextPageToken||"";
-      }while(eventPageToken);
+          const page=await gfetch(url);
+
+          for(const e of (page.items||[])){
+            if(e.status==="cancelled") continue;
+            allEvents.push({
+              ...e,
+              _calendarName:cal.summaryOverride||cal.summary||"Ημερολόγιο",
+              _calendarId:cal.id
+            });
+          }
+
+          token=page.nextPageToken||"";
+        }while(token);
+      }catch(oneCalendarError){
+        console.warn("Παράλειψη ημερολογίου:",cal.summary,oneCalendarError);
+      }
     }
 
     calendarEvents=allEvents;
+    calendarOk=true;
+    calendarMessage=`${calendarEvents.length} ραντεβού`;
+
+  }catch(err){
+    console.error("Calendar API error",err);
+    calendarEvents=[];
+
+    if(err.status===403){
+      calendarMessage="Calendar API: έλεγχος Enable/άδειας στο σωστό project";
+    }else{
+      calendarMessage="Calendar API: σφάλμα φόρτωσης";
+    }
+  }
+
+  // GOOGLE TASKS - ανεξάρτητα από Calendar API
+  try{
     await loadGoogleTasks();
-    renderCalendar();
-  }catch(e){
-    console.error(e);
-    $("calendarList").textContent="Δεν ήταν δυνατή η φόρτωση του ημερολογίου. Πάτησε ξανά Σύνδεση Google Calendar.";
+    tasksOk=true;
+    tasksMessage=`${googleTasks.length} εργασίες`;
+  }catch(err){
+    console.error("Tasks API error",err);
+    googleTasks=[];
+
+    if(err.status===403){
+      tasksMessage="Tasks API: έλεγχος Enable/άδειας στο σωστό project";
+    }else{
+      tasksMessage="Tasks API: σφάλμα φόρτωσης";
+    }
+  }
+
+  renderCalendar();
+
+  if(calendarOk || tasksOk){
+    const parts=[];
+    if(calendarOk) parts.push(`${calendarsFound} ημερολόγια`,calendarMessage);
+    else parts.push(calendarMessage);
+
+    parts.push(tasksMessage);
+
+    $("googleStatus").textContent="✅ Συνδεδεμένο — "+parts.join(" · ");
+  }else{
+    $("googleStatus").innerHTML=
+      `⚠️ Συνδεδεμένο, αλλά δεν φορτώθηκαν δεδομένα.<br>`+
+      `<span class="muted">${escapeHtml(calendarMessage)} · ${escapeHtml(tasksMessage)}</span>`;
   }
 }
 function toLocalInputValue(d){
@@ -369,44 +459,57 @@ function toLocalInputValue(d){
 }
 
 async function loadGoogleTasks(){
-  if(!googleToken){ googleTasks=[]; return; }
-  try{
-    let taskLists=[], pageToken="";
-    do{
-      const url="https://tasks.googleapis.com/tasks/v1/users/@me/lists?maxResults=1000"
-        +(pageToken?"&pageToken="+encodeURIComponent(pageToken):"");
-      const page=await gfetch(url);
-      taskLists.push(...(page.items||[]));
-      pageToken=page.nextPageToken||"";
-    }while(pageToken);
-
-    const {start,end}=monthRange();
-    let all=[];
-
-    for(const list of taskLists){
-      let token="";
-      do{
-        const url="https://tasks.googleapis.com/tasks/v1/lists/"
-          +encodeURIComponent(list.id)
-          +"/tasks?maxResults=100"
-          +"&showCompleted=true&showHidden=true"
-          +"&dueMin="+encodeURIComponent(start.toISOString())
-          +"&dueMax="+encodeURIComponent(end.toISOString())
-          +(token?"&pageToken="+encodeURIComponent(token):"");
-
-        const page=await gfetch(url);
-        for(const t of (page.items||[])){
-          if(t.deleted) continue;
-          all.push({...t,_taskListName:list.title||"Εργασίες"});
-        }
-        token=page.nextPageToken||"";
-      }while(token);
-    }
-    googleTasks=all;
-  }catch(e){
-    console.error("Tasks load error",e);
+  if(!googleToken){
     googleTasks=[];
+    return;
   }
+
+  let taskLists=[], pageToken="";
+
+  do{
+    const url="https://tasks.googleapis.com/tasks/v1/users/@me/lists?maxResults=100"
+      +(pageToken?"&pageToken="+encodeURIComponent(pageToken):"");
+
+    const page=await gfetch(url);
+    taskLists.push(...(page.items||[]));
+    pageToken=page.nextPageToken||"";
+  }while(pageToken);
+
+  const {start,end}=monthRange();
+  let all=[];
+
+  for(const list of taskLists){
+    let token="";
+
+    do{
+      const params=new URLSearchParams();
+      params.set("maxResults","100");
+      params.set("showCompleted","true");
+      params.set("showDeleted","false");
+      params.set("showHidden","true");
+      params.set("dueMin",start.toISOString());
+      params.set("dueMax",end.toISOString());
+      if(token) params.set("pageToken",token);
+
+      const url="https://tasks.googleapis.com/tasks/v1/lists/"
+        +encodeURIComponent(list.id)+"/tasks?"+params.toString();
+
+      const page=await gfetch(url);
+
+      for(const t of (page.items||[])){
+        if(t.deleted) continue;
+        all.push({
+          ...t,
+          _taskListName:list.title||"Εργασίες",
+          _taskListId:list.id
+        });
+      }
+
+      token=page.nextPageToken||"";
+    }while(token);
+  }
+
+  googleTasks=all;
 }
 
 function openAppointment(){
